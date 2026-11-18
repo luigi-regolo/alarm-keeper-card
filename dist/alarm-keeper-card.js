@@ -1,5 +1,5 @@
 /**
- * Alarm Keeper Card — Home Assistant dashboard card. Version 1.0
+ * Alarm Keeper Card — Home Assistant dashboard card. Version 1.1
  * Copyright (c) 2026 luigi-regolo. SPDX-License-Identifier: GPL-3.0-only.
  * Works on the alarm_control_panel domain and on device classes, so it fits any alarm integration.
  * The alarm code is typed every time, is sent to Home Assistant and is never stored.
@@ -8,29 +8,723 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.0';
+  const VERSION = '1.1';
   const TAG = 'alarm-keeper-card';
   const EDITOR_TAG = 'alarm-keeper-card-editor';
+
+  /* ---------------------------------------------------------- languages */
+  // Italian, English, German and French. The language follows the Home Assistant user; English is the fallback.
+  const LANGS = [['it', 'Italiano'], ['en', 'English'], ['de', 'Deutsch'], ['fr', 'Français']];
+  const TR = {
+  it: {
+    "m_doors": "Porte",
+    "m_windows": "Finestre",
+    "m_motion": "Volumetrici",
+    "m_batteries": "Batterie",
+    "m_cameras": "Telecamere",
+    "m_siren": "Sirena",
+    "m_tamper": "Manomissione",
+    "m_station": "Centrale",
+    "m_volumes": "Volumi",
+    "m_settings": "Impostazioni",
+    "h_doors": "Sensori porta e porta garage.",
+    "h_windows": "Sensori finestra o apertura.",
+    "h_motion": "Sensori di movimento e presenza, con l’ultimo movimento.",
+    "h_batteries": "Livello delle batterie dei dispositivi dell’allarme.",
+    "h_cameras": "Telecamere opzionali, un tocco apre i dettagli.",
+    "h_siren": "Accende e spegne la sirena, con conferma prima di attivarla.",
+    "h_tamper": "Sensori di manomissione.",
+    "h_station": "Informazioni e stato della centrale.",
+    "h_volumes": "Volume della sirena e della tastiera. Sola lettura, si modifica con il lucchetto.",
+    "h_settings": "Modalità di esclusione, suoni e altre scelte.",
+    "alarm": "Allarme",
+    "u_now": "ora",
+    "u_d": "g",
+    "d_lt1": "meno di 1 min",
+    "at_today": "alle {t}",
+    "at_yday": "ieri alle {t}",
+    "at_date": "il {d} alle {t}",
+    "err_cfg": "Configurazione non valida",
+    "nf": "Non trovata",
+    "ent_nf": "Entità non trovata",
+    "na": "Non disponibile",
+    "ok": "Ok",
+    "s_open": "Aperta",
+    "s_open_since": "Aperta da {s}",
+    "s_closed": "Chiusa",
+    "s_closed_since": "Chiusa · da {s}",
+    "s_motion_on": "Movimento in corso",
+    "s_motion_off": "Nessun movimento",
+    "s_motion_last": "{m} · ultimo {t}",
+    "s_tamper": "Manomissione",
+    "s_low": "Bassa",
+    "s_invalid": "Valore non valido",
+    "s_on": "Attiva",
+    "s_off": "Spenta",
+    "sum_open_1": "{o} aperta su {n}",
+    "sum_open_n": "{o} aperte su {n}",
+    "sum_na_1": "{n} non disponibile",
+    "sum_na_n": "{n} non disponibili",
+    "sum_closed1": "Chiusa",
+    "sum_allclosed": "Tutte chiuse",
+    "sum_act_1": "{n} attivo",
+    "sum_act_n": "{n} attivi",
+    "sum_none_m": "Nessuno",
+    "sum_tamper_1": "{n} manomissione",
+    "sum_tamper_n": "{n} manomissioni",
+    "sum_none_f": "Nessuna",
+    "sum_low_1": "{n} bassa",
+    "sum_low_n": "{n} basse",
+    "sum_allok": "Tutte ok",
+    "sum_cam_1": "{n} attiva",
+    "sum_cam_n": "{n} attive",
+    "sum_vols": "{n} volumi",
+    "sum_sets": "{n} impostazioni",
+    "sum_all": "Tutto ok",
+    "home": "In casa",
+    "away": "Fuori casa",
+    "disarmed": "Disinserito",
+    "trig": "Scattato",
+    "arming": "Inserimento",
+    "entry": "Ingresso",
+    "disarming": "Disinserimento",
+    "na_s": "Non disp.",
+    "since_t": "dalle {t}",
+    "since_ago": "da {s}",
+    "dial_aria": "Quadrante dell’allarme: {l}",
+    "c_disarm": "Disattiva",
+    "cmd_fail": "Comando non riuscito. Riprova.",
+    "cmd_fail_s": "Comando non riuscito.",
+    "code_bad": "Codice non corretto o comando rifiutato.",
+    "vol_fail": "Volume non modificato.",
+    "sir_off_fail": "Sirena non spenta.",
+    "sir_on_fail": "Sirena non attivata.",
+    "set_fail": "Impostazione non modificata.",
+    "a_lock_vol": "Blocca la modifica di {n}",
+    "a_unlock_vol": "Sblocca la modifica di {n}",
+    "a_dec": "Diminuisci {n}",
+    "a_inc": "Aumenta {n}",
+    "a_siren": "Sirena {n}",
+    "g_ok": "Tutto ok",
+    "g_att_1": "{n} in attenzione",
+    "g_att_n": "{n} in attenzione",
+    "g_allgood": "Tutto in ordine",
+    "g_noalerts_l": "nessuna segnalazione",
+    "g_noalerts": "Nessuna segnalazione",
+    "close": "Chiudi",
+    "details": "Dettagli e stato",
+    "f_att": "Attenzione",
+    "f_all": "Tutti",
+    "sir_off_q": "Spegnere la sirena?",
+    "sir_on_q": "Attivare la sirena?",
+    "sir_off_p": "La sirena verrà spenta subito.",
+    "sir_on_p": "La sirena suonerà subito. Potrai spegnerla da qui.",
+    "cancel": "Annulla",
+    "sir_off_b": "Spegni sirena",
+    "sir_on_b": "Attiva sirena",
+    "l_home": "In casa",
+    "l_away": "Fuori casa",
+    "l_off": "Disinserito",
+    "l_trig": "Allarme scattato",
+    "l_pend": "In corso",
+    "l_unk": "Non disponibile",
+    "code": "Codice",
+    "now": "Ora",
+    "after_cmd": "Dopo il comando",
+    "code_req": "Codice richiesto",
+    "no_code": "Nessun codice impostato in Home Assistant: il tastierino non verifica nulla.",
+    "del_digit": "Cancella l’ultima cifra",
+    "sending": "Invio…",
+    "k_disarm": "Disattiva allarme",
+    "k_home": "Inserisci in casa",
+    "k_away": "Inserisci fuori casa",
+    "code_note": "Il codice si digita ogni volta e non viene mai salvato. Lo verifica Home Assistant.",
+    "empty_entity": "Scegli l’entità dell’allarme dalla configurazione della card.",
+    "empty_mods": "Nessun modulo con entità: scegli le entità dalla configurazione della card.",
+    "leg_today": "Oggi inserito {d}",
+    "leg_not": "Non inserito",
+    "leg_p": "Quadrante da 12 ore: ora mostra {w}.",
+    "w_pm": "il pomeriggio (12–24)",
+    "w_am": "la mattina (0–12)",
+    "leg_nohist": " Storico non disponibile: mostro solo lo stato attuale.",
+    "secs": "Sezioni",
+    "tAl": "Allarme",
+    "tMo": "Moduli",
+    "tAs": "Aspetto",
+    "al_desc": "Scegli la centrale e come si presenta il pannello. Il codice non viene mai salvato nella card: lo digiti ogni volta e lo verifica Home Assistant.",
+    "e_entity": "Entità allarme",
+    "e_entity_h": "Qualsiasi entità del dominio alarm_control_panel.",
+    "e_panel": "Pannello allarme",
+    "e_panel_h": "Quadrante con le ore di oggi, comandi e riquadri. Spento: la card mostra solo i moduli scelti.",
+    "e_cmds": "Comandi attivi",
+    "e_cmds_h": "Pulsanti In casa, Fuori casa e Disattiva. Spenti: il pannello resta in sola lettura.",
+    "e_leg": "Legenda al tocco",
+    "e_leg_h": "Toccando il quadrante compaiono i colori e il totale di oggi.",
+    "e_hands": "Lancette",
+    "e_hands_h": "Spente di default: il punto sul bordo segna già l’ora attuale.",
+    "mod_head": "Moduli",
+    "mod_desc": "Scegli le entità di ogni modulo dai selettori. Un modulo senza entità non compare. Ogni modulo funziona anche da solo: per averne uno solo su una card, spegni il pannello allarme e lascia attivo solo quel modulo.",
+    "mv_up": "Sposta su {n}",
+    "mv_dn": "Sposta giù {n}",
+    "mod_on": "Modulo attivo",
+    "mod_tile": "Riga nell’elenco della card",
+    "room_add": "Aggiungi da stanza",
+    "room_pick": "Scegli una stanza…",
+    "room_h": "Aggiunge i dispositivi compatibili di quella stanza. Puoi sempre toglierne qualcuno dal selettore.",
+    "eyebrow": "Intestazione superiore",
+    "title": "Titolo",
+    "title_h": "Il punto verde finale lo aggiunge la card.",
+    "show_eyebrow": "Mostra intestazione superiore",
+    "show_title": "Mostra titolo",
+    "full": "Tutta la larghezza disponibile su tablet e desktop",
+    "full_h": "Se è disattivato la card resta stretta (460 px) al centro.",
+    "theme": "Tema",
+    "th_auto": "Automatico (Home Assistant)",
+    "lang": "Lingua",
+    "lang_auto": "Automatica (Home Assistant)",
+    "lang_h": "Automatica segue la lingua dell’utente in Home Assistant. Se la lingua non è disponibile si usa l’inglese."
+  },
+  en: {
+    "m_doors": "Doors",
+    "m_windows": "Windows",
+    "m_motion": "Motion",
+    "m_batteries": "Batteries",
+    "m_cameras": "Cameras",
+    "m_siren": "Siren",
+    "m_tamper": "Tamper",
+    "m_station": "Base station",
+    "m_volumes": "Volumes",
+    "m_settings": "Settings",
+    "h_doors": "Door and garage door sensors.",
+    "h_windows": "Window or opening sensors.",
+    "h_motion": "Motion and presence sensors, with the last movement.",
+    "h_batteries": "Battery level of the alarm devices.",
+    "h_cameras": "Optional cameras, a tap opens the details.",
+    "h_siren": "Turns the siren on and off, with confirmation before activating it.",
+    "h_tamper": "Tamper sensors.",
+    "h_station": "Base station information and status.",
+    "h_volumes": "Siren and keypad volume. Read-only, change it with the padlock.",
+    "h_settings": "Bypass mode, sounds and other choices.",
+    "alarm": "Alarm",
+    "u_now": "now",
+    "u_d": "d",
+    "d_lt1": "less than 1 min",
+    "at_today": "at {t}",
+    "at_yday": "yesterday at {t}",
+    "at_date": "on {d} at {t}",
+    "err_cfg": "Invalid configuration",
+    "nf": "Not found",
+    "ent_nf": "Entity not found",
+    "na": "Unavailable",
+    "ok": "OK",
+    "s_open": "Open",
+    "s_open_since": "Open for {s}",
+    "s_closed": "Closed",
+    "s_closed_since": "Closed · for {s}",
+    "s_motion_on": "Motion detected",
+    "s_motion_off": "No motion",
+    "s_motion_last": "{m} · last {t}",
+    "s_tamper": "Tamper",
+    "s_low": "Low",
+    "s_invalid": "Invalid value",
+    "s_on": "Active",
+    "s_off": "Off",
+    "sum_open_1": "{o} of {n} open",
+    "sum_open_n": "{o} of {n} open",
+    "sum_na_1": "{n} unavailable",
+    "sum_na_n": "{n} unavailable",
+    "sum_closed1": "Closed",
+    "sum_allclosed": "All closed",
+    "sum_act_1": "{n} active",
+    "sum_act_n": "{n} active",
+    "sum_none_m": "None",
+    "sum_tamper_1": "{n} tamper alert",
+    "sum_tamper_n": "{n} tamper alerts",
+    "sum_none_f": "None",
+    "sum_low_1": "{n} low",
+    "sum_low_n": "{n} low",
+    "sum_allok": "All OK",
+    "sum_cam_1": "{n} active",
+    "sum_cam_n": "{n} active",
+    "sum_vols": "{n} volumes",
+    "sum_sets": "{n} settings",
+    "sum_all": "All OK",
+    "home": "Home",
+    "away": "Away",
+    "disarmed": "Disarmed",
+    "trig": "Triggered",
+    "arming": "Arming",
+    "entry": "Entry",
+    "disarming": "Disarming",
+    "na_s": "N/A",
+    "since_t": "since {t}",
+    "since_ago": "for {s}",
+    "dial_aria": "Alarm clock dial: {l}",
+    "c_disarm": "Disarm",
+    "cmd_fail": "Command failed. Try again.",
+    "cmd_fail_s": "Command failed.",
+    "code_bad": "Wrong code or command rejected.",
+    "vol_fail": "Volume not changed.",
+    "sir_off_fail": "Siren not turned off.",
+    "sir_on_fail": "Siren not turned on.",
+    "set_fail": "Setting not changed.",
+    "a_lock_vol": "Lock editing of {n}",
+    "a_unlock_vol": "Unlock editing of {n}",
+    "a_dec": "Decrease {n}",
+    "a_inc": "Increase {n}",
+    "a_siren": "Siren {n}",
+    "g_ok": "All OK",
+    "g_att_1": "{n} needs attention",
+    "g_att_n": "{n} need attention",
+    "g_allgood": "All good",
+    "g_noalerts_l": "no alerts",
+    "g_noalerts": "No alerts",
+    "close": "Close",
+    "details": "Details and status",
+    "f_att": "Attention",
+    "f_all": "All",
+    "sir_off_q": "Turn the siren off?",
+    "sir_on_q": "Turn the siren on?",
+    "sir_off_p": "The siren will be turned off immediately.",
+    "sir_on_p": "The siren will sound immediately. You can turn it off from here.",
+    "cancel": "Cancel",
+    "sir_off_b": "Turn siren off",
+    "sir_on_b": "Turn siren on",
+    "l_home": "Home",
+    "l_away": "Away",
+    "l_off": "Disarmed",
+    "l_trig": "Alarm triggered",
+    "l_pend": "In progress",
+    "l_unk": "Unavailable",
+    "code": "Code",
+    "now": "Now",
+    "after_cmd": "After the command",
+    "code_req": "Code required",
+    "no_code": "No code set in Home Assistant: the keypad checks nothing.",
+    "del_digit": "Delete the last digit",
+    "sending": "Sending…",
+    "k_disarm": "Disarm alarm",
+    "k_home": "Arm home",
+    "k_away": "Arm away",
+    "code_note": "The code is typed every time and is never saved. Home Assistant checks it.",
+    "empty_entity": "Choose the alarm entity in the card settings.",
+    "empty_mods": "No module with entities: choose the entities in the card settings.",
+    "leg_today": "Armed today {d}",
+    "leg_not": "Not armed",
+    "leg_p": "12-hour dial: now showing {w}.",
+    "w_pm": "the afternoon (12–24)",
+    "w_am": "the morning (0–12)",
+    "leg_nohist": " History not available: showing only the current state.",
+    "secs": "Sections",
+    "tAl": "Alarm",
+    "tMo": "Modules",
+    "tAs": "Appearance",
+    "al_desc": "Choose the alarm panel and how the panel looks. The code is never saved in the card: you type it every time and Home Assistant checks it.",
+    "e_entity": "Alarm entity",
+    "e_entity_h": "Any entity of the alarm_control_panel domain.",
+    "e_panel": "Alarm panel",
+    "e_panel_h": "Dial with today’s hours, commands and tiles. Off: the card only shows the chosen modules.",
+    "e_cmds": "Commands enabled",
+    "e_cmds_h": "Home, Away and Disarm buttons. Off: the panel stays read-only.",
+    "e_leg": "Legend on tap",
+    "e_leg_h": "Tapping the dial shows the colours and today’s total.",
+    "e_hands": "Clock hands",
+    "e_hands_h": "Off by default: the dot on the rim already marks the current time.",
+    "mod_head": "Modules",
+    "mod_desc": "Choose each module’s entities with the pickers. A module without entities is not shown. Every module also works on its own: to have just one on a card, turn off the alarm panel and keep only that module on.",
+    "mv_up": "Move {n} up",
+    "mv_dn": "Move {n} down",
+    "mod_on": "Module enabled",
+    "mod_tile": "Row in the card list",
+    "room_add": "Add from room",
+    "room_pick": "Choose a room…",
+    "room_h": "Adds the compatible devices of that room. You can always remove some from the picker.",
+    "eyebrow": "Top label",
+    "title": "Title",
+    "title_h": "The green dot at the end is added by the card.",
+    "show_eyebrow": "Show top label",
+    "show_title": "Show title",
+    "full": "Full available width on tablet and desktop",
+    "full_h": "If off, the card stays narrow (460 px) and centred.",
+    "theme": "Theme",
+    "th_auto": "Automatic (Home Assistant)",
+    "lang": "Language",
+    "lang_auto": "Automatic (Home Assistant)",
+    "lang_h": "Automatic follows the user’s language in Home Assistant. If the language is not available, English is used."
+  },
+  de: {
+    "m_doors": "Türen",
+    "m_windows": "Fenster",
+    "m_motion": "Bewegung",
+    "m_batteries": "Batterien",
+    "m_cameras": "Kameras",
+    "m_siren": "Sirene",
+    "m_tamper": "Sabotage",
+    "m_station": "Zentrale",
+    "m_volumes": "Lautstärken",
+    "m_settings": "Einstellungen",
+    "h_doors": "Tür- und Garagentorsensoren.",
+    "h_windows": "Fenster- oder Öffnungssensoren.",
+    "h_motion": "Bewegungs- und Präsenzsensoren mit der letzten Bewegung.",
+    "h_batteries": "Batteriestand der Alarmgeräte.",
+    "h_cameras": "Optionale Kameras, ein Tippen öffnet die Details.",
+    "h_siren": "Schaltet die Sirene ein und aus, mit Bestätigung vor dem Aktivieren.",
+    "h_tamper": "Sabotagesensoren.",
+    "h_station": "Informationen und Status der Zentrale.",
+    "h_volumes": "Lautstärke von Sirene und Tastatur. Nur lesend, mit dem Schloss änderbar.",
+    "h_settings": "Ausschlussmodus, Töne und weitere Optionen.",
+    "alarm": "Alarm",
+    "u_now": "jetzt",
+    "u_d": "T",
+    "d_lt1": "weniger als 1 Min.",
+    "at_today": "um {t}",
+    "at_yday": "gestern um {t}",
+    "at_date": "am {d} um {t}",
+    "err_cfg": "Ungültige Konfiguration",
+    "nf": "Nicht gefunden",
+    "ent_nf": "Entität nicht gefunden",
+    "na": "Nicht verfügbar",
+    "ok": "OK",
+    "s_open": "Offen",
+    "s_open_since": "Offen seit {s}",
+    "s_closed": "Geschlossen",
+    "s_closed_since": "Geschlossen · seit {s}",
+    "s_motion_on": "Bewegung erkannt",
+    "s_motion_off": "Keine Bewegung",
+    "s_motion_last": "{m} · zuletzt {t}",
+    "s_tamper": "Sabotage",
+    "s_low": "Schwach",
+    "s_invalid": "Ungültiger Wert",
+    "s_on": "Aktiv",
+    "s_off": "Aus",
+    "sum_open_1": "{o} von {n} offen",
+    "sum_open_n": "{o} von {n} offen",
+    "sum_na_1": "{n} nicht verfügbar",
+    "sum_na_n": "{n} nicht verfügbar",
+    "sum_closed1": "Geschlossen",
+    "sum_allclosed": "Alle geschlossen",
+    "sum_act_1": "{n} aktiv",
+    "sum_act_n": "{n} aktiv",
+    "sum_none_m": "Keine",
+    "sum_tamper_1": "{n} Sabotage",
+    "sum_tamper_n": "{n} Sabotagen",
+    "sum_none_f": "Keine",
+    "sum_low_1": "{n} schwach",
+    "sum_low_n": "{n} schwach",
+    "sum_allok": "Alle in Ordnung",
+    "sum_cam_1": "{n} aktiv",
+    "sum_cam_n": "{n} aktiv",
+    "sum_vols": "{n} Lautstärken",
+    "sum_sets": "{n} Einstellungen",
+    "sum_all": "Alles in Ordnung",
+    "home": "Zuhause",
+    "away": "Abwesend",
+    "disarmed": "Unscharf",
+    "trig": "Ausgelöst",
+    "arming": "Schärfen",
+    "entry": "Eingang",
+    "disarming": "Entschärfen",
+    "na_s": "N. verf.",
+    "since_t": "seit {t}",
+    "since_ago": "seit {s}",
+    "dial_aria": "Alarm-Zifferblatt: {l}",
+    "c_disarm": "Deaktivieren",
+    "cmd_fail": "Befehl fehlgeschlagen. Versuche es erneut.",
+    "cmd_fail_s": "Befehl fehlgeschlagen.",
+    "code_bad": "Falscher Code oder Befehl abgelehnt.",
+    "vol_fail": "Lautstärke nicht geändert.",
+    "sir_off_fail": "Sirene nicht ausgeschaltet.",
+    "sir_on_fail": "Sirene nicht eingeschaltet.",
+    "set_fail": "Einstellung nicht geändert.",
+    "a_lock_vol": "Bearbeitung von {n} sperren",
+    "a_unlock_vol": "Bearbeitung von {n} entsperren",
+    "a_dec": "{n} verringern",
+    "a_inc": "{n} erhöhen",
+    "a_siren": "Sirene {n}",
+    "g_ok": "Alles in Ordnung",
+    "g_att_1": "{n} zu beachten",
+    "g_att_n": "{n} zu beachten",
+    "g_allgood": "Alles in Ordnung",
+    "g_noalerts_l": "keine Meldungen",
+    "g_noalerts": "Keine Meldungen",
+    "close": "Schließen",
+    "details": "Details und Status",
+    "f_att": "Achtung",
+    "f_all": "Alle",
+    "sir_off_q": "Sirene ausschalten?",
+    "sir_on_q": "Sirene einschalten?",
+    "sir_off_p": "Die Sirene wird sofort ausgeschaltet.",
+    "sir_on_p": "Die Sirene ertönt sofort. Du kannst sie hier ausschalten.",
+    "cancel": "Abbrechen",
+    "sir_off_b": "Sirene aus",
+    "sir_on_b": "Sirene ein",
+    "l_home": "Zuhause",
+    "l_away": "Abwesend",
+    "l_off": "Unscharf",
+    "l_trig": "Alarm ausgelöst",
+    "l_pend": "In Bearbeitung",
+    "l_unk": "Nicht verfügbar",
+    "code": "Code",
+    "now": "Jetzt",
+    "after_cmd": "Nach dem Befehl",
+    "code_req": "Code erforderlich",
+    "no_code": "In Home Assistant ist kein Code festgelegt: Die Tastatur prüft nichts.",
+    "del_digit": "Letzte Ziffer löschen",
+    "sending": "Wird gesendet…",
+    "k_disarm": "Alarm deaktivieren",
+    "k_home": "Zuhause aktivieren",
+    "k_away": "Abwesend aktivieren",
+    "code_note": "Der Code wird jedes Mal eingegeben und nie gespeichert. Home Assistant prüft ihn.",
+    "empty_entity": "Wähle die Alarm-Entität in den Karteneinstellungen.",
+    "empty_mods": "Kein Modul mit Entitäten: Wähle die Entitäten in den Karteneinstellungen.",
+    "leg_today": "Heute scharf {d}",
+    "leg_not": "Nicht scharf",
+    "leg_p": "12-Stunden-Zifferblatt: zeigt jetzt {w}.",
+    "w_pm": "den Nachmittag (12–24)",
+    "w_am": "den Vormittag (0–12)",
+    "leg_nohist": " Verlauf nicht verfügbar: Es wird nur der aktuelle Status angezeigt.",
+    "secs": "Bereiche",
+    "tAl": "Alarm",
+    "tMo": "Module",
+    "tAs": "Darstellung",
+    "al_desc": "Wähle die Alarmzentrale und das Aussehen des Panels. Der Code wird nie in der Karte gespeichert: Du gibst ihn jedes Mal ein und Home Assistant prüft ihn.",
+    "e_entity": "Alarm-Entität",
+    "e_entity_h": "Jede Entität der Domain alarm_control_panel.",
+    "e_panel": "Alarmpanel",
+    "e_panel_h": "Zifferblatt mit den Stunden von heute, Befehlen und Kacheln. Aus: Die Karte zeigt nur die gewählten Module.",
+    "e_cmds": "Befehle aktiv",
+    "e_cmds_h": "Schaltflächen Zuhause, Abwesend und Deaktivieren. Aus: Das Panel bleibt schreibgeschützt.",
+    "e_leg": "Legende per Antippen",
+    "e_leg_h": "Beim Antippen des Zifferblatts erscheinen die Farben und die Summe von heute.",
+    "e_hands": "Zeiger",
+    "e_hands_h": "Standardmäßig aus: Der Punkt am Rand zeigt bereits die aktuelle Uhrzeit.",
+    "mod_head": "Module",
+    "mod_desc": "Wähle die Entitäten jedes Moduls mit den Auswahlfeldern. Ein Modul ohne Entitäten wird nicht angezeigt. Jedes Modul funktioniert auch allein: Um nur eines auf einer Karte zu haben, schalte das Alarmpanel aus und lasse nur dieses Modul aktiv.",
+    "mv_up": "{n} nach oben",
+    "mv_dn": "{n} nach unten",
+    "mod_on": "Modul aktiv",
+    "mod_tile": "Zeile in der Kartenliste",
+    "room_add": "Aus Raum hinzufügen",
+    "room_pick": "Raum wählen…",
+    "room_h": "Fügt die kompatiblen Geräte dieses Raums hinzu. Du kannst jederzeit einzelne im Auswahlfeld entfernen.",
+    "eyebrow": "Obere Zeile",
+    "title": "Titel",
+    "title_h": "Den grünen Punkt am Ende fügt die Karte hinzu.",
+    "show_eyebrow": "Obere Zeile anzeigen",
+    "show_title": "Titel anzeigen",
+    "full": "Volle verfügbare Breite auf Tablet und Desktop",
+    "full_h": "Wenn aus, bleibt die Karte schmal (460 px) und zentriert.",
+    "theme": "Design",
+    "th_auto": "Automatisch (Home Assistant)",
+    "lang": "Sprache",
+    "lang_auto": "Automatisch (Home Assistant)",
+    "lang_h": "Automatisch folgt der Sprache des Benutzers in Home Assistant. Ist die Sprache nicht verfügbar, wird Englisch verwendet."
+  },
+  fr: {
+    "m_doors": "Portes",
+    "m_windows": "Fenêtres",
+    "m_motion": "Mouvement",
+    "m_batteries": "Batteries",
+    "m_cameras": "Caméras",
+    "m_siren": "Sirène",
+    "m_tamper": "Sabotage",
+    "m_station": "Centrale",
+    "m_volumes": "Volumes",
+    "m_settings": "Réglages",
+    "h_doors": "Capteurs de porte et de porte de garage.",
+    "h_windows": "Capteurs de fenêtre ou d’ouverture.",
+    "h_motion": "Capteurs de mouvement et de présence, avec le dernier mouvement.",
+    "h_batteries": "Niveau de batterie des appareils de l’alarme.",
+    "h_cameras": "Caméras facultatives, un appui ouvre les détails.",
+    "h_siren": "Allume et éteint la sirène, avec confirmation avant l’activation.",
+    "h_tamper": "Capteurs de sabotage.",
+    "h_station": "Informations et état de la centrale.",
+    "h_volumes": "Volume de la sirène et du clavier. Lecture seule, modifiable avec le cadenas.",
+    "h_settings": "Mode d’exclusion, sons et autres choix.",
+    "alarm": "Alarme",
+    "u_now": "maintenant",
+    "u_d": "j",
+    "d_lt1": "moins d’1 min",
+    "at_today": "à {t}",
+    "at_yday": "hier à {t}",
+    "at_date": "le {d} à {t}",
+    "err_cfg": "Configuration non valide",
+    "nf": "Introuvable",
+    "ent_nf": "Entité introuvable",
+    "na": "Indisponible",
+    "ok": "OK",
+    "s_open": "Ouverte",
+    "s_open_since": "Ouverte depuis {s}",
+    "s_closed": "Fermée",
+    "s_closed_since": "Fermée · depuis {s}",
+    "s_motion_on": "Mouvement en cours",
+    "s_motion_off": "Aucun mouvement",
+    "s_motion_last": "{m} · dernier {t}",
+    "s_tamper": "Sabotage",
+    "s_low": "Faible",
+    "s_invalid": "Valeur non valide",
+    "s_on": "Active",
+    "s_off": "Éteinte",
+    "sum_open_1": "{o} ouverte sur {n}",
+    "sum_open_n": "{o} ouvertes sur {n}",
+    "sum_na_1": "{n} indisponible",
+    "sum_na_n": "{n} indisponibles",
+    "sum_closed1": "Fermée",
+    "sum_allclosed": "Toutes fermées",
+    "sum_act_1": "{n} actif",
+    "sum_act_n": "{n} actifs",
+    "sum_none_m": "Aucun",
+    "sum_tamper_1": "{n} sabotage",
+    "sum_tamper_n": "{n} sabotages",
+    "sum_none_f": "Aucun",
+    "sum_low_1": "{n} faible",
+    "sum_low_n": "{n} faibles",
+    "sum_allok": "Toutes OK",
+    "sum_cam_1": "{n} active",
+    "sum_cam_n": "{n} actives",
+    "sum_vols": "{n} volumes",
+    "sum_sets": "{n} réglages",
+    "sum_all": "Tout est OK",
+    "home": "À la maison",
+    "away": "Absent",
+    "disarmed": "Désarmée",
+    "trig": "Déclenchée",
+    "arming": "Armement",
+    "entry": "Entrée",
+    "disarming": "Désarmement",
+    "na_s": "Indispo.",
+    "since_t": "depuis {t}",
+    "since_ago": "depuis {s}",
+    "dial_aria": "Cadran de l’alarme : {l}",
+    "c_disarm": "Désarmer",
+    "cmd_fail": "Commande échouée. Réessayez.",
+    "cmd_fail_s": "Commande échouée.",
+    "code_bad": "Code incorrect ou commande refusée.",
+    "vol_fail": "Volume non modifié.",
+    "sir_off_fail": "Sirène non éteinte.",
+    "sir_on_fail": "Sirène non activée.",
+    "set_fail": "Réglage non modifié.",
+    "a_lock_vol": "Verrouiller la modification de {n}",
+    "a_unlock_vol": "Déverrouiller la modification de {n}",
+    "a_dec": "Diminuer {n}",
+    "a_inc": "Augmenter {n}",
+    "a_siren": "Sirène {n}",
+    "g_ok": "Tout est OK",
+    "g_att_1": "{n} en alerte",
+    "g_att_n": "{n} en alerte",
+    "g_allgood": "Tout est en ordre",
+    "g_noalerts_l": "aucun signalement",
+    "g_noalerts": "Aucun signalement",
+    "close": "Fermer",
+    "details": "Détails et état",
+    "f_att": "Attention",
+    "f_all": "Tous",
+    "sir_off_q": "Éteindre la sirène ?",
+    "sir_on_q": "Activer la sirène ?",
+    "sir_off_p": "La sirène sera éteinte immédiatement.",
+    "sir_on_p": "La sirène retentira immédiatement. Vous pourrez l’éteindre ici.",
+    "cancel": "Annuler",
+    "sir_off_b": "Éteindre la sirène",
+    "sir_on_b": "Activer la sirène",
+    "l_home": "À la maison",
+    "l_away": "Absent",
+    "l_off": "Désarmée",
+    "l_trig": "Alarme déclenchée",
+    "l_pend": "En cours",
+    "l_unk": "Indisponible",
+    "code": "Code",
+    "now": "Maintenant",
+    "after_cmd": "Après la commande",
+    "code_req": "Code requis",
+    "no_code": "Aucun code défini dans Home Assistant : le clavier ne vérifie rien.",
+    "del_digit": "Effacer le dernier chiffre",
+    "sending": "Envoi…",
+    "k_disarm": "Désarmer l’alarme",
+    "k_home": "Armer à la maison",
+    "k_away": "Armer en absence",
+    "code_note": "Le code se saisit à chaque fois et n’est jamais enregistré. Home Assistant le vérifie.",
+    "empty_entity": "Choisissez l’entité d’alarme dans la configuration de la carte.",
+    "empty_mods": "Aucun module avec entités : choisissez les entités dans la configuration de la carte.",
+    "leg_today": "Armée aujourd’hui {d}",
+    "leg_not": "Non armée",
+    "leg_p": "Cadran de 12 heures : affiche maintenant {w}.",
+    "w_pm": "l’après-midi (12–24)",
+    "w_am": "le matin (0–12)",
+    "leg_nohist": " Historique indisponible : seul l’état actuel est affiché.",
+    "secs": "Sections",
+    "tAl": "Alarme",
+    "tMo": "Modules",
+    "tAs": "Apparence",
+    "al_desc": "Choisissez la centrale et l’aspect du panneau. Le code n’est jamais enregistré dans la carte : vous le saisissez à chaque fois et Home Assistant le vérifie.",
+    "e_entity": "Entité d’alarme",
+    "e_entity_h": "Toute entité du domaine alarm_control_panel.",
+    "e_panel": "Panneau d’alarme",
+    "e_panel_h": "Cadran avec les heures du jour, commandes et tuiles. Désactivé : la carte n’affiche que les modules choisis.",
+    "e_cmds": "Commandes actives",
+    "e_cmds_h": "Boutons À la maison, Absent et Désarmer. Désactivés : le panneau reste en lecture seule.",
+    "e_leg": "Légende au toucher",
+    "e_leg_h": "En touchant le cadran, les couleurs et le total du jour s’affichent.",
+    "e_hands": "Aiguilles",
+    "e_hands_h": "Désactivées par défaut : le point sur le bord indique déjà l’heure actuelle.",
+    "mod_head": "Modules",
+    "mod_desc": "Choisissez les entités de chaque module avec les sélecteurs. Un module sans entités n’apparaît pas. Chaque module fonctionne aussi seul : pour n’en avoir qu’un sur une carte, désactivez le panneau d’alarme et ne laissez actif que ce module.",
+    "mv_up": "Monter {n}",
+    "mv_dn": "Descendre {n}",
+    "mod_on": "Module actif",
+    "mod_tile": "Ligne dans la liste de la carte",
+    "room_add": "Ajouter depuis une pièce",
+    "room_pick": "Choisir une pièce…",
+    "room_h": "Ajoute les appareils compatibles de cette pièce. Vous pouvez toujours en retirer dans le sélecteur.",
+    "eyebrow": "Texte supérieur",
+    "title": "Titre",
+    "title_h": "Le point vert final est ajouté par la carte.",
+    "show_eyebrow": "Afficher le texte supérieur",
+    "show_title": "Afficher le titre",
+    "full": "Toute la largeur disponible sur tablette et ordinateur",
+    "full_h": "Si désactivé, la carte reste étroite (460 px) et centrée.",
+    "theme": "Thème",
+    "th_auto": "Automatique (Home Assistant)",
+    "lang": "Langue",
+    "lang_auto": "Automatique (Home Assistant)",
+    "lang_h": "Automatique suit la langue de l’utilisateur dans Home Assistant. Si la langue n’est pas disponible, l’anglais est utilisé."
+  }
+  };
+  let CUR = 'en';
+  const T = (k, v) => {
+    let t = TR[CUR] && TR[CUR][k];
+    if (t == null) t = TR.en[k];
+    if (t == null) return k;
+    return v ? t.replace(/\{(\w+)\}/g, (m, x) => (v[x] != null ? v[x] : m)) : t;
+  };
+  const TP = (k, n, v) => T(k + (n === 1 ? '_1' : '_n'), Object.assign({ n: n }, v));
+  const baseLang = (h) => {
+    const l = h && ((h.locale && h.locale.language) || h.language);
+    return typeof l === 'string' ? l.toLowerCase().split(/[-_]/)[0] : 'en';
+  };
+  const pickLang = (cfgLang, h) => {
+    const l = cfgLang && cfgLang !== 'auto' ? cfgLang : baseLang(h);
+    return TR[l] ? l : 'en';
+  };
 
   /* ---------------------------------------------------------------- data */
   // Modules: every one works alone (card without the alarm panel) or together in the full card.
   const MODS = {
-    doors:     { title: 'Porte',       short: 'Porte',       icon: 'mdi:door-closed',        help: 'Sensori porta e porta garage.',                      sel: { filter: [{ domain: 'binary_sensor', device_class: ['door', 'garage_door', 'opening'] }] },            tile: true },
-    windows:   { title: 'Finestre',    short: 'Finestre',    icon: 'mdi:window-closed-variant', help: 'Sensori finestra o apertura.',                    sel: { filter: [{ domain: 'binary_sensor', device_class: ['window', 'opening'] }] },                         tile: true },
-    motion:    { title: 'Volumetrici', short: 'Volumetrici', icon: 'mdi:motion-sensor',      help: 'Sensori di movimento e presenza, con l’ultimo movimento.', sel: { filter: [{ domain: 'binary_sensor', device_class: ['motion', 'occupancy', 'presence'] }] },      tile: true },
-    batteries: { title: 'Batterie',    short: 'Batterie',    icon: 'mdi:battery',            help: 'Livello delle batterie dei dispositivi dell’allarme.', sel: { filter: [{ domain: 'sensor', device_class: 'battery' }, { domain: 'binary_sensor', device_class: 'battery' }] }, tile: true },
-    cameras:   { title: 'Telecamere',  short: 'Telecamere',  icon: 'mdi:cctv',               help: 'Telecamere opzionali, un tocco apre i dettagli.',   sel: { filter: [{ domain: 'camera' }] },                                                                        tile: true },
-    siren:     { title: 'Sirena',      short: 'Sirena',      icon: 'mdi:bullhorn-outline',   help: 'Accende e spegne la sirena, con conferma prima di attivarla.', sel: { filter: [{ domain: 'switch' }, { domain: 'siren' }] },                                   tile: true },
-    tamper:    { title: 'Manomissione', short: 'Manomissione', icon: 'mdi:shield-alert',     help: 'Sensori di manomissione.',                          sel: { filter: [{ domain: 'binary_sensor', device_class: 'tamper' }] },                                          tile: false },
-    station:   { title: 'Centrale',    short: 'Centrale',    icon: 'mdi:router-wireless',    help: 'Informazioni e stato della centrale.',              sel: { filter: [{ domain: 'sensor' }, { domain: 'binary_sensor' }] },                                          tile: false },
-    volumes:   { title: 'Volumi',      short: 'Volumi',      icon: 'mdi:volume-high',        help: 'Volume della sirena e della tastiera. Sola lettura, si modifica con il lucchetto.', sel: { filter: [{ domain: 'number' }] }, tile: false },
-    settings:  { title: 'Impostazioni', short: 'Impostazioni', icon: 'mdi:tune',             help: 'Modalità di esclusione, suoni e altre scelte.', sel: { filter: [{ domain: 'select' }] },                                                                    tile: false }
+    doors:     { icon: 'mdi:door-closed',        sel: { filter: [{ domain: 'binary_sensor', device_class: ['door', 'garage_door', 'opening'] }] },            tile: true },
+    windows:   { icon: 'mdi:window-closed-variant', sel: { filter: [{ domain: 'binary_sensor', device_class: ['window', 'opening'] }] },                         tile: true },
+    motion:    { icon: 'mdi:motion-sensor',      sel: { filter: [{ domain: 'binary_sensor', device_class: ['motion', 'occupancy', 'presence'] }] },      tile: true },
+    batteries: { icon: 'mdi:battery',            sel: { filter: [{ domain: 'sensor', device_class: 'battery' }, { domain: 'binary_sensor', device_class: 'battery' }] }, tile: true },
+    cameras:   { icon: 'mdi:cctv',               sel: { filter: [{ domain: 'camera' }] },                                                                        tile: true },
+    siren:     { icon: 'mdi:bullhorn-outline',   sel: { filter: [{ domain: 'switch' }, { domain: 'siren' }] },                                   tile: true },
+    tamper:    { icon: 'mdi:shield-alert',     sel: { filter: [{ domain: 'binary_sensor', device_class: 'tamper' }] },                                          tile: false },
+    station:   { icon: 'mdi:router-wireless',    sel: { filter: [{ domain: 'sensor' }, { domain: 'binary_sensor' }] },                                          tile: false },
+    volumes:   { icon: 'mdi:volume-high',        sel: { filter: [{ domain: 'number' }] }, tile: false },
+    settings:  { icon: 'mdi:tune',             sel: { filter: [{ domain: 'select' }] },                                                                    tile: false }
   };
   const ROOM_MODS = ['doors', 'windows', 'motion', 'batteries', 'tamper', 'cameras'];
   const MOD_ORDER = ['doors', 'windows', 'motion', 'batteries', 'cameras', 'siren', 'tamper', 'station', 'volumes', 'settings'];
 
   const DEFAULTS = {
-    entity: '', title: 'Allarme', eyebrow: 'ALARM KEEPER CARD', show_eyebrow: true, show_title: true,
+    entity: '', title: null, language: 'auto', eyebrow: 'ALARM KEEPER CARD', show_eyebrow: true, show_title: true,
     panel: true, commands: true, legend: true, hands: false, width: 'center', theme_mode: 'auto'
   };
 
@@ -46,14 +740,14 @@
   const hhmm = (d) => pad(d.getHours()) + ':' + pad(d.getMinutes());
   const agoT = (ms) => {
     const m = Math.round(ms / 60000);
-    if (m < 1) return 'ora';
+    if (m < 1) return T('u_now');
     if (m < 60) return m + ' min';
     if (m < 1440) return Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
-    return Math.floor(m / 1440) + ' g';
+    return Math.floor(m / 1440) + ' ' + T('u_d');
   };
   const durH = (h) => {
     const m = Math.round(h * 60);
-    if (m < 1) return 'meno di 1 min';
+    if (m < 1) return T('d_lt1');
     const H = Math.floor(m / 60), M = m % 60;
     return H ? (M ? H + ' h ' + M + ' min' : H + ' h') : M + ' min';
   };
@@ -61,21 +755,24 @@
   const nowH = () => (Date.now() - midnight()) / 3600000;
   const atText = (ts) => {
     const d = new Date(ts), n = new Date();
-    if (d.toDateString() === n.toDateString()) return 'alle ' + hhmm(d);
+    if (d.toDateString() === n.toDateString()) return T('at_today', { t: hhmm(d) });
     const y = new Date(n.getTime() - 86400000);
-    if (d.toDateString() === y.toDateString()) return 'ieri alle ' + hhmm(d);
-    return 'il ' + pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' alle ' + hhmm(d);
+    if (d.toDateString() === y.toDateString()) return T('at_yday', { t: hhmm(d) });
+    let ds = pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+    try { ds = d.toLocaleDateString(CUR, { day: 'numeric', month: 'short' }); } catch (e) { /* keep numeric */ }
+    return T('at_date', { d: ds, t: hhmm(d) });
   };
   const isNum = (v) => v !== '' && v != null && isFinite(Number(v));
 
   function normalizeConfig(raw) {
-    if (!raw || typeof raw !== 'object') throw new Error('Configurazione non valida');
+    if (!raw || typeof raw !== 'object') throw new Error(T('err_cfg'));
     const c = Object.assign({}, DEFAULTS, raw);
     if (['auto', 'light', 'dark'].indexOf(c.theme_mode) < 0) c.theme_mode = 'auto';
     ['show_eyebrow', 'show_title', 'panel', 'commands', 'legend', 'hands'].forEach((k) => { c[k] = c[k] !== false && c[k] !== 'false'; });
     if (['center', 'left', 'right', 'full'].indexOf(c.width) < 0) c.width = 'center';
     c.hands = raw.hands === true;
-    c.title = String(c.title == null ? '' : c.title).trim().replace(/\.+$/, '');
+    c.title = c.title == null ? null : String(c.title).trim().replace(/\.+$/, '');
+    c.language = LANGS.some((l) => l[0] === raw.language) ? raw.language : 'auto';
     const src = raw.modules && typeof raw.modules === 'object' ? raw.modules : {};
     c.modules = {};
     MOD_ORDER.forEach((k) => {
@@ -120,7 +817,7 @@
   }
 
   function fmtState(h, s) {
-    if (!s) return 'Non trovata';
+    if (!s) return T('nf');
     if (h && typeof h.formatEntityState === 'function') { try { return h.formatEntityState(s); } catch (e) { /* fall back */ } }
     const u = s.attributes && s.attributes.unit_of_measurement;
     return s.state + (u ? ' ' + u : '');
@@ -133,29 +830,29 @@
       const s = stOf(h, id), nm = nameOf(s, id), lc = s ? Date.parse(s.last_changed) : NaN;
       const since = isFinite(lc) ? agoT(now - lc) : '';
       const it = { id: id, name: nm, lv: '', icon: MODS[k].icon, sub: '', val: '' };
-      if (!s) { it.lv = 'warn'; it.sub = 'Entità non trovata'; return it; }
-      if (s.state === 'unavailable' || s.state === 'unknown') { it.lv = 'warn'; it.sub = 'Non disponibile'; it.na = true; if (k === 'cameras') it.off = true; return it; }
+      if (!s) { it.lv = 'warn'; it.sub = T('ent_nf'); return it; }
+      if (s.state === 'unavailable' || s.state === 'unknown') { it.lv = 'warn'; it.sub = T('na'); it.na = true; if (k === 'cameras') it.off = true; return it; }
       const on = s.state === 'on';
       if (k === 'doors' || k === 'windows') {
         const door = k === 'doors';
         it.icon = on ? (door ? 'mdi:door-open' : 'mdi:window-open-variant') : (door ? 'mdi:door-closed' : 'mdi:window-closed-variant');
         it.open = on; it.lv = on ? 'warn' : '';
-        it.sub = on ? 'Aperta' + (since ? ' da ' + since : '') : 'Chiusa' + (since ? ' · da ' + since : '');
+        it.sub = on ? (since ? T('s_open_since', { s: since }) : T('s_open')) : (since ? T('s_closed_since', { s: since }) : T('s_closed'));
       } else if (k === 'motion') {
         it.act = on; it.lv = on ? 'warn' : '';
-        it.sub = on ? 'Movimento in corso' : 'Nessun movimento' + (isFinite(lc) ? ' · ultimo ' + atText(lc) : '');
+        it.sub = on ? T('s_motion_on') : (isFinite(lc) ? T('s_motion_last', { m: T('s_motion_off'), t: atText(lc) }) : T('s_motion_off'));
       } else if (k === 'tamper') {
-        it.tamper = on; it.lv = on ? 'crit' : ''; it.sub = on ? 'Manomissione' : 'Ok';
+        it.tamper = on; it.lv = on ? 'crit' : ''; it.sub = on ? T('s_tamper') : T('ok');
       } else if (k === 'batteries') {
-        if (s.entity_id && s.entity_id.indexOf('binary_sensor.') === 0) { it.low = on; it.lv = on ? 'warn' : ''; it.icon = on ? 'mdi:battery-alert' : 'mdi:battery'; it.sub = on ? 'Bassa' : 'Ok'; }
+        if (s.entity_id && s.entity_id.indexOf('binary_sensor.') === 0) { it.low = on; it.lv = on ? 'warn' : ''; it.icon = on ? 'mdi:battery-alert' : 'mdi:battery'; it.sub = on ? T('s_low') : T('ok'); }
         else if (isNum(s.state)) { const p = Number(s.state); it.pct = p; it.low = p < LOW_BATTERY; it.lv = it.low ? 'warn' : ''; it.icon = it.low ? 'mdi:battery-low' : 'mdi:battery'; it.sub = Math.round(p) + '%'; }
-        else { it.lv = 'warn'; it.sub = 'Valore non valido'; it.na = true; }
+        else { it.lv = 'warn'; it.sub = T('s_invalid'); it.na = true; }
       } else if (k === 'station') {
         it.icon = (s.attributes && s.attributes.icon) || 'mdi:router-wireless'; it.sub = fmtState(h, s);
       } else if (k === 'siren') {
-        it.on = on; it.lv = on ? 'crit' : ''; it.sub = on ? 'Attiva' : 'Spenta';
+        it.on = on; it.lv = on ? 'crit' : ''; it.sub = on ? T('s_on') : T('s_off');
       } else if (k === 'cameras') {
-        it.pic = s.attributes && s.attributes.entity_picture; it.off = false; it.sub = 'Attiva';
+        it.pic = s.attributes && s.attributes.entity_picture; it.off = false; it.sub = T('s_on');
       } else if (k === 'volumes') {
         const a = s.attributes || {};
         let v = Number(s.state);
@@ -163,7 +860,7 @@
         it.num = v; it.min = isNum(a.min) ? Number(a.min) : 0; it.max = isNum(a.max) ? Number(a.max) : 100; it.step = isNum(a.step) && Number(a.step) > 0 ? Number(a.step) : 1; it.unit = a.unit_of_measurement || '';
         it.val = (isNum(v) ? (Math.round(v * 100) / 100) : s.state) + (it.unit ? (it.unit === '%' ? '' : ' ') + it.unit : '');
         it.icon = 'mdi:volume-high';
-        if (!isNum(v)) { it.lv = 'warn'; it.sub = 'Valore non valido'; it.na = true; }
+        if (!isNum(v)) { it.lv = 'warn'; it.sub = T('s_invalid'); it.na = true; }
       } else if (k === 'settings') {
         const a = s.attributes || {};
         it.options = Array.isArray(a.options) ? a.options : []; it.cur = s.state; it.icon = a.icon || 'mdi:tune';
@@ -174,50 +871,51 @@
 
   function summaryOf(k, items) {
     const n = items.length, na = items.filter((i) => i.na).length;
+    const naT = () => ({ lv: 'warn', t: TP('sum_na', na) });
     if (k === 'doors' || k === 'windows') {
       const o = items.filter((i) => i.open).length;
-      if (o) return { lv: 'warn', t: o + (o === 1 ? ' aperta' : ' aperte') + ' su ' + n };
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: n === 1 ? 'Chiusa' : (k === 'doors' ? 'Tutte chiuse' : 'Tutte chiuse') };
+      if (o) return { lv: 'warn', t: TP('sum_open', o, { o: o, n: n }) };
+      if (na) return naT();
+      return { lv: 'ok', t: n === 1 ? T('sum_closed1') : T('sum_allclosed') };
     }
     if (k === 'motion') {
       const a = items.filter((i) => i.act).length;
-      if (a) return { lv: 'warn', t: a + (a === 1 ? ' attivo' : ' attivi') };
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: 'Nessuno' };
+      if (a) return { lv: 'warn', t: TP('sum_act', a) };
+      if (na) return naT();
+      return { lv: 'ok', t: T('sum_none_m') };
     }
     if (k === 'tamper') {
       const a = items.filter((i) => i.tamper).length;
-      if (a) return { lv: 'crit', t: a + (a === 1 ? ' manomissione' : ' manomissioni') };
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: 'Nessuna' };
+      if (a) return { lv: 'crit', t: TP('sum_tamper', a) };
+      if (na) return naT();
+      return { lv: 'ok', t: T('sum_none_f') };
     }
     if (k === 'batteries') {
       const l = items.filter((i) => i.low).length;
-      if (l) return { lv: 'warn', t: l + (l === 1 ? ' bassa' : ' basse') };
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: 'Tutte ok' };
+      if (l) return { lv: 'warn', t: TP('sum_low', l) };
+      if (na) return naT();
+      return { lv: 'ok', t: T('sum_allok') };
     }
     if (k === 'cameras') {
       const off = items.filter((i) => i.off).length;
-      if (off) return { lv: 'warn', t: off + (off === 1 ? ' non disponibile' : ' non disponibili') };
-      return { lv: 'ok', t: n + (n === 1 ? ' attiva' : ' attive') };
+      if (off) return { lv: 'warn', t: TP('sum_na', off) };
+      return { lv: 'ok', t: TP('sum_cam', n) };
     }
     if (k === 'siren') {
-      if (items.some((i) => i.on)) return { lv: 'crit', t: 'Attiva' };
-      if (na) return { lv: 'warn', t: 'Non disponibile' };
-      return { lv: 'ok', t: 'Spenta' };
+      if (items.some((i) => i.on)) return { lv: 'crit', t: T('s_on') };
+      if (na) return { lv: 'warn', t: T('na') };
+      return { lv: 'ok', t: T('s_off') };
     }
     if (k === 'volumes') {
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: n === 1 ? items[0].val : n + ' volumi' };
+      if (na) return naT();
+      return { lv: 'ok', t: n === 1 ? items[0].val : T('sum_vols', { n: n }) };
     }
     if (k === 'settings') {
-      if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-      return { lv: 'ok', t: n === 1 ? items[0].cur : n + ' impostazioni' };
+      if (na) return naT();
+      return { lv: 'ok', t: n === 1 ? items[0].cur : T('sum_sets', { n: n }) };
     }
-    if (na) return { lv: 'warn', t: na + ' non disponibil' + (na === 1 ? 'e' : 'i') };
-    return { lv: 'ok', t: n === 1 ? 'Ok' : 'Tutto ok' };
+    if (na) return naT();
+    return { lv: 'ok', t: n === 1 ? T('ok') : T('sum_all') };
   }
 
   /* ----------------------------------------------------------------- CSS */
@@ -233,7 +931,7 @@
 .hc ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;flex:none;--mdc-icon-size:18px;width:18px;height:18px}
 .cardw{container-type:inline-size;min-width:0}
 .shell{position:relative;background:var(--hc-bg);border:1px solid var(--hc-line);border-radius:26px;padding:13px}
-.head{margin:2px 4px 12px}.eye{font-size:10px;letter-spacing:1.7px;font-weight:750;color:var(--hc-muted);margin-bottom:7px;overflow-wrap:anywhere}
+.head{margin:2px 4px 12px}.eye{font-size:11px;letter-spacing:1.5px;font-weight:750;color:var(--hc-fg);opacity:.78;margin-bottom:7px;overflow-wrap:anywhere}
 .title{font-size:23px;line-height:1.14;font-weight:800;letter-spacing:-.7px;overflow-wrap:anywhere}.title b{color:var(--hc-accent)}
 .panel{position:relative;background:var(--hc-tile);border:1px solid var(--hc-line);border-radius:24px;padding:8px 12px;margin-bottom:10px}
 .dial{display:block;margin:0 auto 4px;max-width:186px;width:100%;height:auto}.dial.tap{cursor:pointer}
@@ -270,15 +968,26 @@
 .hc .cardw{max-width:460px;margin:0 auto}
 .hc[data-cw="left"] .cardw{margin:0 auto 0 0}.hc[data-cw="right"] .cardw{margin:0 0 0 auto}.hc[data-cw="full"] .cardw{max-width:none}
 .hc .head{margin-bottom:12px}.hc .title{font-size:20px}
-.hc .panel.has-dial{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 14px;align-items:center;padding:8px 12px}
-.hc .panel.has-dial .dial{max-width:112px;margin:0}.hc .panel.has-dial .cmds{flex-direction:column;gap:6px;margin:0}
-.hc .panel.has-dial .cmd{min-height:38px;font-size:13px;padding:4px 10px}
+.hc .panel.has-dial{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 16px;align-items:center;padding:10px 14px}
+.hc .panel.has-dial .dial{max-width:132px;margin:0}.hc .panel.has-dial .cmds{flex-direction:column;gap:8px;margin:0}
+.hc .panel.has-dial .cmd{min-height:44px;font-size:14px;font-weight:700;padding:4px 10px}
 .hc .lst{grid-template-columns:repeat(3,minmax(0,1fr))}
 .hc .lst .tile{flex-direction:column;gap:3px;text-align:center;padding:8px 4px;min-height:64px;justify-content:center;border-top:0;border-left:1px solid var(--hc-line)}
 .hc .lst .tile:nth-child(3n+1){border-left:0}.hc .lst .tile:nth-child(n+4){border-top:1px solid var(--hc-line)}
 .hc .lst .tile:last-child:nth-child(odd){grid-column:auto}
 .hc .tile .t{flex:none;font-size:11.5px}.hc .tile .st{max-width:100%;font-size:10.5px;text-align:center}.hc .tile .chev{display:none}
 .hc .lst .tile.ph{pointer-events:none}
+@container (max-width:599px){
+.hc .cardw .lst{background:transparent;border:0;border-radius:0;overflow:visible;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.hc .cardw .lst .tile{background:var(--hc-tile);border:1px solid var(--hc-line);border-radius:18px;min-height:84px;gap:6px;padding:10px 4px}
+.hc .cardw .lst .tile.ph{display:none}
+.hc .cardw .lst .tile.warn{border-color:var(--hc-warn-bd)}.hc .cardw .lst .tile.crit{border-color:var(--hc-crit-bg)}
+.hc .cardw .lst .tile .ico{width:34px;height:34px}.hc .cardw .lst .tile .ico ha-icon{--mdc-icon-size:19px;width:19px;height:19px}
+.hc .cardw .lst .tile .t{font-size:12.5px;font-weight:700}
+.hc .cardw .lst .tile .st{max-width:96%;font-size:11px;font-weight:700;line-height:1.3;padding:3px 9px;border-radius:999px;background:color-mix(in srgb,var(--hc-accent) 16%,transparent);color:var(--hc-btn-fg)}
+.hc .cardw .lst .tile.warn .st{background:var(--hc-warn-bg);color:var(--hc-warn-fg)}
+.hc .cardw .lst .tile.crit .st{background:var(--hc-crit-bg);color:#fff}
+.hc[data-loading] .cardw .lst .tile .st{background:transparent}}
 .hc .detail{min-height:38px}
 .head.hb{display:flex;align-items:center;justify-content:space-between;gap:10px}.head.hb .ht{min-width:0}
 .hc .detail.dtl{flex:none;width:36px;min-width:36px;height:36px;min-height:36px;padding:0;gap:0;margin:0;border-radius:50%}.detail.dtl ha-icon{--mdc-icon-size:20px}
@@ -418,6 +1127,7 @@
       const wide = !IS_PHONE && window.matchMedia('(min-width:640px) and (min-height:600px)').matches;
       this.setAttribute('data-popup', wide ? 'wide' : 'phone');
     }
+    _sl() { CUR = pickLang(this._cfg && this._cfg.language, this._hass); return CUR; }
     _wide() { return this.getAttribute('data-popup') === 'wide'; }
     _colCount() {
       if (!this._wide()) return 1;
@@ -433,7 +1143,7 @@
 
     _signature() {
       const h = this._hass, c = this._cfg;
-      const parts = [h && h.themes && h.themes.darkMode ? 'd' : 'l', JSON.stringify(this._vunl), JSON.stringify(this._volPend)];
+      const parts = [h && h.themes && h.themes.darkMode ? 'd' : 'l', pickLang(c.language, h), JSON.stringify(this._vunl), JSON.stringify(this._volPend)];
       if (c.entity) { const s = stOf(h, c.entity); parts.push('A:' + (s ? s.state + ':' + s.last_changed + ':' + (s.attributes && s.attributes.code_format) : '-')); }
       MOD_ORDER.forEach((k) => {
         const m = c.modules[k];
@@ -496,15 +1206,15 @@
     _dial(mode, st) {
       const cx = 100, cy = 100, r = 84, n = nowH(), half = n >= 12 ? 1 : 0, h0 = half * 12, cfg = this._cfg;
       const meta = {
-        home: { p: SHIELD.home, l: 'In casa', o: 'var(--hc-accent)', f: '#fff' },
-        away: { p: SHIELD.away, l: 'Fuori casa', o: 'var(--hc-away)', f: '#fff' },
-        off: { p: SHIELD.off, l: 'Disinserito', o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' },
-        trig: { p: SHIELD.trig, l: 'Scattato', o: 'var(--hc-crit-bg)', f: '#fff' },
-        pend: { p: SHIELD.off, l: st && st.state === 'arming' ? 'Inserimento' : st && st.state === 'pending' ? 'Ingresso' : 'Disinserimento', o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' },
-        unk: { p: SHIELD.off, l: 'Non disp.', o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' }
+        home: { p: SHIELD.home, l: T('home'), o: 'var(--hc-accent)', f: '#fff' },
+        away: { p: SHIELD.away, l: T('away'), o: 'var(--hc-away)', f: '#fff' },
+        off: { p: SHIELD.off, l: T('disarmed'), o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' },
+        trig: { p: SHIELD.trig, l: T('trig'), o: 'var(--hc-crit-bg)', f: '#fff' },
+        pend: { p: SHIELD.off, l: st && st.state === 'arming' ? T('arming') : st && st.state === 'pending' ? T('entry') : T('disarming'), o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' },
+        unk: { p: SHIELD.off, l: T('na_s'), o: 'var(--hc-warn-bg)', f: 'var(--hc-warn-fg)', ring: 'var(--hc-warn-bd)' }
       };
       const M = meta[mode], lc = st ? Date.parse(st.last_changed) : NaN;
-      const sub = !isFinite(lc) ? '' : (mode === 'home' || mode === 'away') ? 'dalle ' + hhmm(new Date(lc)) : mode === 'unk' ? '' : 'da ' + agoT(Date.now() - lc);
+      const sub = !isFinite(lc) ? '' : (mode === 'home' || mode === 'away') ? T('since_t', { t: hhmm(new Date(lc)) }) : mode === 'unk' ? '' : T('since_ago', { s: agoT(Date.now() - lc) });
       const P = (rr, p) => { const a = (p / 12 * 360 - 90) * Math.PI / 180; return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)]; };
       const arc = (p0, p1, col) => {
         const A = P(r, p0), B = P(r, p1);
@@ -528,19 +1238,19 @@
       }
       [['12', 0], ['3', 3], ['6', 6], ['9', 9]].forEach((l) => {
         const p = P(r - 23, l[1]);
-        a += '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-size="14" font-weight="700" fill="var(--hc-fg)" font-family="Roboto,Arial,sans-serif">' + l[0] + '</text>';
+        a += '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-size="' + (cfg.hands ? 14 : 16) + '" font-weight="700" fill="var(--hc-fg)" font-family="Roboto,Arial,sans-serif">' + l[0] + '</text>';
       });
       if (cfg.hands) {
         const hh = P(32, n % 12), mm = P(46, ((n % 1) * 60) / 5);
         a += '<line x1="' + cx + '" y1="' + cy + '" x2="' + hh[0] + '" y2="' + hh[1] + '" stroke="var(--hc-fg)" stroke-width="4" stroke-linecap="round" opacity=".85"/><line x1="' + cx + '" y1="' + cy + '" x2="' + mm[0] + '" y2="' + mm[1] + '" stroke="var(--hc-fg)" stroke-width="2.5" stroke-linecap="round" opacity=".85"/><circle cx="' + cx + '" cy="' + cy + '" r="5" fill="var(--hc-fg)"/>';
       }
-      const hd = cfg.hands, ry = hd ? 108 : 58, rh = hd ? 48 : 84, ir = hd ? 8 : 13, iy = hd ? 121 : 80, ly = hd ? 140 : 115, sy = hd ? 151 : 131;
-      const ks = ir * 2 * 0.65 / 24, lsz = M.l.length > 11 ? 12 : hd ? 12 : 14;
-      a += '<rect x="46" y="' + ry + '" width="108" height="' + rh + '" rx="16" fill="var(--hc-tile)" opacity=".94"/><circle cx="' + cx + '" cy="' + iy + '" r="' + ir + '" fill="' + M.o + '"' + (M.ring ? ' stroke="' + M.ring + '" stroke-width="1.5"' : '') + '/>' +
+      const hd = cfg.hands, ry = hd ? 108 : 54, rh = hd ? 48 : 92, ir = hd ? 8 : 13, cr = hd ? 8 : 14, iy = hd ? 121 : 76, ly = hd ? 140 : 114, sy = hd ? 151 : 136;
+      const ks = ir * 2 * 0.65 / 24, lsz = hd ? 12 : M.l.length > 11 ? 14 : 16;
+      a += '<rect x="' + (hd ? 46 : 44) + '" y="' + ry + '" width="' + (hd ? 108 : 112) + '" height="' + rh + '" rx="16" fill="var(--hc-tile)" opacity=".94"/><circle cx="' + cx + '" cy="' + iy + '" r="' + cr + '" fill="' + M.o + '"' + (M.ring ? ' stroke="' + M.ring + '" stroke-width="1.5"' : '') + '/>' +
         '<g transform="translate(' + (cx - 12 * ks).toFixed(2) + ',' + (iy - 12 * ks).toFixed(2) + ') scale(' + ks.toFixed(3) + ')" fill="' + M.f + '"><path d="' + M.p + '"/></g>' +
         '<text x="' + cx + '" y="' + (sub ? ly : ly + 4) + '" text-anchor="middle" font-size="' + lsz + '" font-weight="700" fill="var(--hc-fg)" font-family="Roboto,Arial,sans-serif">' + M.l + '</text>' +
-        (sub ? '<text x="' + cx + '" y="' + sy + '" text-anchor="middle" font-size="9.5" fill="var(--hc-muted)" font-family="Roboto,Arial,sans-serif">' + esc(sub) + '</text>' : '');
-      return '<svg class="dial' + (cfg.legend ? ' tap' : '') + '" ' + (cfg.legend ? 'data-act="leg" role="button" tabindex="0" ' : 'role="img" ') + 'aria-label="Quadrante dell’allarme: ' + M.l + '" width="200" height="200" viewBox="0 0 200 200">' + a + '</svg>';
+        (sub ? '<text x="' + cx + '" y="' + sy + '" text-anchor="middle" font-size="' + (hd ? 9.5 : 13) + '" fill="var(--hc-muted)" font-family="Roboto,Arial,sans-serif">' + esc(sub) + '</text>' : '');
+      return '<svg class="dial' + (cfg.legend ? ' tap' : '') + '" ' + (cfg.legend ? 'data-act="leg" role="button" tabindex="0" ' : 'role="img" ') + 'aria-label="' + esc(T('dial_aria', { l: M.l })) + '" width="200" height="200" viewBox="0 0 200 200">' + a + '</svg>';
     }
 
     _armedTotal() {
@@ -551,11 +1261,11 @@
     /* ---- commands ---- */
     _cmds(mode, st) {
       const b = (cls, icon, label, act) => '<button type="button" class="cmd ' + cls + '" data-act="' + act + '" data-focus="' + act + '">' + ic(icon) + label + '</button>';
-      if (mode === 'home') return b('p', 'mdi:shield-off', 'Disattiva', 'disarm') + b('', 'mdi:shield-lock', 'Fuori casa', 'arm_away');
-      if (mode === 'away') return b('p', 'mdi:shield-off', 'Disattiva', 'disarm') + b('', 'mdi:shield-home', 'In casa', 'arm_home');
-      if (mode === 'trig') return b('c', 'mdi:shield-off', 'Disattiva', 'disarm');
-      if (mode === 'off') return b('p', 'mdi:shield-home', 'In casa', 'arm_home') + b('', 'mdi:shield-lock', 'Fuori casa', 'arm_away');
-      if (mode === 'pend') return b('p', 'mdi:shield-off', 'Disattiva', 'disarm');
+      if (mode === 'home') return b('p', 'mdi:shield-off', T('c_disarm'), 'disarm') + b('', 'mdi:shield-lock', T('away'), 'arm_away');
+      if (mode === 'away') return b('p', 'mdi:shield-off', T('c_disarm'), 'disarm') + b('', 'mdi:shield-home', T('home'), 'arm_home');
+      if (mode === 'trig') return b('c', 'mdi:shield-off', T('c_disarm'), 'disarm');
+      if (mode === 'off') return b('p', 'mdi:shield-home', T('home'), 'arm_home') + b('', 'mdi:shield-lock', T('away'), 'arm_away');
+      if (mode === 'pend') return b('p', 'mdi:shield-off', T('c_disarm'), 'disarm');
       return '';
     }
 
@@ -566,12 +1276,13 @@
       if (!st) return;
       const needArm = !!(st.attributes && st.attributes.code_arm_required && this._needsCode(st));
       if (needArm) { this._openKeypad(act); return; }
-      this._call('alarm_control_panel', 'alarm_' + act, { entity_id: this._cfg.entity }, 'Comando non riuscito. Riprova.');
+      this._call('alarm_control_panel', 'alarm_' + act, { entity_id: this._cfg.entity }, T('cmd_fail'));
     }
     _call(domain, service, data, failMsg) {
+      const fm = failMsg || T('cmd_fail_s');
       try {
-        Promise.resolve(this._hass.callService(domain, service, data)).then(() => { /* state arrives through hass */ }, () => { this._flash(failMsg || 'Comando non riuscito.'); });
-      } catch (e) { this._flash(failMsg || 'Comando non riuscito.'); }
+        Promise.resolve(this._hass.callService(domain, service, data)).then(() => { /* state arrives through hass */ }, () => { this._flash(fm); });
+      } catch (e) { this._flash(fm); }
     }
     _flash(t) {
       this._msg = t; this._render();
@@ -598,7 +1309,7 @@
       const fin = (ok) => {
         this._busy = false;
         if (ok) { this._code = ''; this._closePopup(); return; }
-        this._err = 'Codice non corretto o comando rifiutato.'; this._code = ''; this._shake = true; this._focus = 'close'; this._render(); this._shake = false;
+        this._sl(); this._err = T('code_bad'); this._code = ''; this._shake = true; this._focus = 'close'; this._render(); this._shake = false;
       };
       try { Promise.resolve(this._hass.callService('alarm_control_panel', 'alarm_' + act, data)).then(() => fin(true), () => fin(false)); } catch (e) { fin(false); }
     }
@@ -639,14 +1350,14 @@
         return '<div class="cams">' + items.map((it) => '<button type="button" class="cam" data-act="cam" data-id="' + esc(it.id) + '" aria-label="' + esc(it.name) + '">' + (it.pic && !it.off ? '<img src="' + esc(it.pic) + '" alt="" loading="lazy">' : ic('mdi:cctv')) + '<span class="lv ' + (it.off ? 'off' : '') + '"><i></i>' + (it.off ? 'OFFLINE' : 'LIVE') + '</span><span class="n">' + esc(it.name) + '</span></button>').join('') + '</div>';
       }
       return items.map((it) => {
-        if (k === 'siren') return this._row(it, '<button type="button" class="sw crit ' + (it.on ? 'on' : '') + '" data-act="siren" data-id="' + esc(it.id) + '" aria-label="Sirena ' + esc(it.name) + '" ' + (it.na ? 'disabled' : '') + '></button>');
+        if (k === 'siren') return this._row(it, '<button type="button" class="sw crit ' + (it.on ? 'on' : '') + '" data-act="siren" data-id="' + esc(it.id) + '" aria-label="' + esc(T('a_siren', { n: it.name })) + '" ' + (it.na ? 'disabled' : '') + '></button>');
         if (k === 'volumes') {
           if (it.na) return this._row(it);
           const unl = !!this._vunl[it.id];
-          const lkb = '<button type="button" class="rl ' + (unl ? 'open' : '') + '" data-act="vlock" data-id="' + esc(it.id) + '" data-focus="vl-' + esc(it.id) + '" aria-label="' + (unl ? 'Blocca la modifica di ' : 'Sblocca la modifica di ') + esc(it.name) + '">' + ic(unl ? 'mdi:lock-open-variant' : 'mdi:lock') + '</button>';
+          const lkb = '<button type="button" class="rl ' + (unl ? 'open' : '') + '" data-act="vlock" data-id="' + esc(it.id) + '" data-focus="vl-' + esc(it.id) + '" aria-label="' + esc(T(unl ? 'a_lock_vol' : 'a_unlock_vol', { n: it.name })) + '">' + ic(unl ? 'mdi:lock-open-variant' : 'mdi:lock') + '</button>';
           if (!unl) return this._row(Object.assign({}, it, { sub: '' }), '<strong class="vv">' + esc(it.val) + '</strong>' + lkb);
           const dl = Math.max(it.step, Math.round(((it.max - it.min) / 10) / it.step) * it.step);
-          return this._row(Object.assign({}, it, { sub: '' }), '<div class="stp"><button type="button" data-act="vol" data-focus="vm-' + esc(it.id) + '" data-id="' + esc(it.id) + '" data-d="' + (-dl) + '" aria-label="Diminuisci ' + esc(it.name) + '" ' + (it.num <= it.min ? 'disabled' : '') + '>−</button><strong>' + esc(it.val) + '</strong><button type="button" data-act="vol" data-focus="vp-' + esc(it.id) + '" data-id="' + esc(it.id) + '" data-d="' + dl + '" aria-label="Aumenta ' + esc(it.name) + '" ' + (it.num >= it.max ? 'disabled' : '') + '>+</button></div>' + lkb);
+          return this._row(Object.assign({}, it, { sub: '' }), '<div class="stp"><button type="button" data-act="vol" data-focus="vm-' + esc(it.id) + '" data-id="' + esc(it.id) + '" data-d="' + (-dl) + '" aria-label="' + esc(T('a_dec', { n: it.name })) + '" ' + (it.num <= it.min ? 'disabled' : '') + '>−</button><strong>' + esc(it.val) + '</strong><button type="button" data-act="vol" data-focus="vp-' + esc(it.id) + '" data-id="' + esc(it.id) + '" data-d="' + dl + '" aria-label="' + esc(T('a_inc', { n: it.name })) + '" ' + (it.num >= it.max ? 'disabled' : '') + '>+</button></div>' + lkb);
         }
         if (k === 'settings') {
           if (it.na || !it.options.length) return this._row(Object.assign({}, it, { sub: it.na ? it.sub : it.cur }));
@@ -662,7 +1373,7 @@
     _groupsHTML(filter) {
       const mods = this._mods();
       let b = '';
-      const none = () => '<div class="grp"><div class="rh"><span>Tutto in ordine</span><em class="o">nessuna segnalazione</em></div>' + this._row({ lv: '', icon: 'mdi:check', name: 'Nessuna segnalazione', sub: 'Ok' }) + '</div>';
+      const none = () => '<div class="grp"><div class="rh"><span>' + esc(T('g_allgood')) + '</span><em class="o">' + esc(T('g_noalerts_l')) + '</em></div>' + this._row({ lv: '', icon: 'mdi:check', name: T('g_noalerts'), sub: T('ok') }) + '</div>';
       if (this._gv === 'room' && this._hasRooms()) {
         const bk = {};
         mods.forEach((k) => this._items(k).forEach((it) => {
@@ -670,11 +1381,11 @@
           const a = areaOf(this._hass, it.id), key = a ? a.id : '';
           (bk[key] = bk[key] || { name: a ? a.name : '', mods: {} }).mods[k] = (bk[key].mods[k] || []).concat([it]);
         }));
-        const keys = Object.keys(bk).filter((x) => x !== '').sort((x, y) => bk[x].name.localeCompare(bk[y].name, 'it'));
+        const keys = Object.keys(bk).filter((x) => x !== '').sort((x, y) => bk[x].name.localeCompare(bk[y].name, CUR));
         if (!keys.length && !bk['']) return none();
         const grp = (title, g, lock, first) => {
           const ord = mods.filter((k) => g.mods[k]).sort((x, y) => (x === first ? -1 : 0) - (y === first ? -1 : 0)), all = [].concat.apply([], ord.map((k) => g.mods[k])), bad = all.filter((i) => i.lv);
-          return '<div class="grp"><div class="rh"><span>' + esc(title) + '</span>' + '' + '<em class="' + (bad.some((i) => i.lv === 'crit') ? 'c' : bad.length ? 'w' : 'o') + '">' + (bad.length ? bad.length + ' in attenzione' : 'Tutto ok') + '</em></div>' +
+          return '<div class="grp"><div class="rh"><span>' + esc(title) + '</span>' + '' + '<em class="' + (bad.some((i) => i.lv === 'crit') ? 'c' : bad.length ? 'w' : 'o') + '">' + (bad.length ? TP('g_att', bad.length) : T('g_ok')) + '</em></div>' +
             ord.map((k) => filter === 'v' ? g.mods[k].map((i) => this._row(i)).join('') : this._itemsHTML(k, g.mods[k])).join('') + '</div>';
         };
         keys.forEach((key) => { b += grp(bk[key].name, bk[key], !!bk[key].mods.volumes && filter !== 'v'); });
@@ -693,7 +1404,7 @@
             const g = { mods: {} };
             if (rest[k]) g.mods[k] = rest[k];
             if (sub[k]) Object.keys(sub[k]).forEach((m) => { g.mods[m] = sub[k][m]; });
-            if (Object.keys(g.mods).length) b += grp(MODS[k].title, g, !!g.mods.volumes && filter !== 'v', k);
+            if (Object.keys(g.mods).length) b += grp(T('m_' + k), g, !!g.mods.volumes && filter !== 'v', k);
           });
         }
         return b;
@@ -704,54 +1415,55 @@
           const L = this._items(k).filter((i) => i.lv);
           if (!L.length) return;
           any = true;
-          b += '<div class="grp"><div class="rh"><span>' + esc(MODS[k].title) + '</span><em class="' + (L.some((i) => i.lv === 'crit') ? 'c' : 'w') + '">' + L.length + ' in attenzione</em></div>' + L.map((i) => this._row(i)).join('') + '</div>';
+          b += '<div class="grp"><div class="rh"><span>' + esc(T('m_' + k)) + '</span><em class="' + (L.some((i) => i.lv === 'crit') ? 'c' : 'w') + '">' + TP('g_att', L.length) + '</em></div>' + L.map((i) => this._row(i)).join('') + '</div>';
         });
         return any ? b : none();
       }
       mods.forEach((k) => {
         const s = summaryOf(k, this._items(k));
-        b += '<div class="grp" data-mod="' + k + '"><div class="rh"><span>' + esc(MODS[k].title) + '</span>' + '<em class="' + (s.lv === 'ok' ? 'o' : s.lv === 'crit' ? 'c' : 'w') + '">' + esc(s.t) + '</em></div>' + this._section(k) + '</div>';
+        b += '<div class="grp" data-mod="' + k + '"><div class="rh"><span>' + esc(T('m_' + k)) + '</span>' + '<em class="' + (s.lv === 'ok' ? 'o' : s.lv === 'crit' ? 'c' : 'w') + '">' + esc(s.t) + '</em></div>' + this._section(k) + '</div>';
       });
       return b;
     }
 
     _popupHTML() {
-      const x = '<button type="button" class="x" data-act="close" data-focus="close" aria-label="Chiudi">' + ic('mdi:close') + '</button>';
+      const x = '<button type="button" class="x" data-act="close" data-focus="close" aria-label="' + esc(T('close')) + '">' + ic('mdi:close') + '</button>';
       const st = stOf(this._hass, this._cfg.entity);
       if (this._view === 'details') {
-        const chips = '<div class="chips"><button type="button" class="chip" data-filter="v" aria-pressed="' + (this._filter === 'v') + '" data-focus="fv">Attenzione</button><button type="button" class="chip" data-filter="a" aria-pressed="' + (this._filter === 'a') + '" data-focus="fa">Tutti</button></div>';
-        return '<dialog class="ov" data-act="ovclose" aria-label="Dettagli e stato"><div class="dlg"><div class="mh"><h2 class="mt">Dettagli e stato</h2>' + x + '</div><div class="mb"><div class="cols">' + chips + this._groupsHTML(this._filter) + '</div></div></div></dialog>';
+        const chips = '<div class="chips"><button type="button" class="chip" data-filter="v" aria-pressed="' + (this._filter === 'v') + '" data-focus="fv">' + esc(T('f_att')) + '</button><button type="button" class="chip" data-filter="a" aria-pressed="' + (this._filter === 'a') + '" data-focus="fa">' + esc(T('f_all')) + '</button></div>';
+        return '<dialog class="ov" data-act="ovclose" aria-label="' + esc(T('details')) + '"><div class="dlg"><div class="mh"><h2 class="mt">' + esc(T('details')) + '</h2>' + x + '</div><div class="mb"><div class="cols">' + chips + this._groupsHTML(this._filter) + '</div></div></div></dialog>';
       }
       if (this._view === 'siren') {
         const so = !!this._sirenOff;
-        return '<dialog class="ov" data-act="ovclose" aria-label="' + (so ? 'Spegnere la sirena' : 'Attivare la sirena') + '"><div class="dlg small"><div class="cf"><div class="wi">' + ic('mdi:bullhorn-outline') + '</div><h3>' + (so ? 'Spegnere la sirena?' : 'Attivare la sirena?') + '</h3><p>' + (so ? 'La sirena verrà spenta subito.' : 'La sirena suonerà subito. Potrai spegnerla da qui.') + '</p><div class="cmds"><button type="button" class="cmd" data-act="close" data-focus="close">Annulla</button><button type="button" class="cmd ' + (so ? 'p' : 'c') + '" data-act="siren-yes" data-focus="yes">' + (so ? 'Spegni sirena' : 'Attiva sirena') + '</button></div></div></div></dialog>';
+        return '<dialog class="ov" data-act="ovclose" aria-label="' + esc(T(so ? 'sir_off_q' : 'sir_on_q').replace(/\s*\?$/, '')) + '"><div class="dlg small"><div class="cf"><div class="wi">' + ic('mdi:bullhorn-outline') + '</div><h3>' + esc(T(so ? 'sir_off_q' : 'sir_on_q')) + '</h3><p>' + esc(T(so ? 'sir_off_p' : 'sir_on_p')) + '</p><div class="cmds"><button type="button" class="cmd" data-act="close" data-focus="close">' + esc(T('cancel')) + '</button><button type="button" class="cmd ' + (so ? 'p' : 'c') + '" data-act="siren-yes" data-focus="yes">' + esc(T(so ? 'sir_off_b' : 'sir_on_b')) + '</button></div></div></div></dialog>';
       }
       // keypad
       const mode = alarmMode(st ? st.state : ''), need = this._needsCode(st), text = st && st.attributes && st.attributes.code_format === 'text';
-      const lab = { home: 'In casa', away: 'Fuori casa', off: 'Disinserito', trig: 'Allarme scattato', pend: 'In corso', unk: 'Non disponibile' }[mode];
-      const after = { disarm: 'Disinserito', arm_home: 'In casa', arm_away: 'Fuori casa' }[this._act];
+      const lab = { home: T('l_home'), away: T('l_away'), off: T('l_off'), trig: T('l_trig'), pend: T('l_pend'), unk: T('l_unk') }[mode];
+      const after = { disarm: T('l_off'), arm_home: T('l_home'), arm_away: T('l_away') }[this._act];
       const orbBg = mode === 'trig' ? 'var(--hc-crit-bg)' : mode === 'away' ? 'var(--hc-away)' : mode === 'off' || mode === 'pend' || mode === 'unk' ? 'var(--hc-warn-bg)' : 'var(--hc-accent)';
       const orbFg = mode === 'off' || mode === 'pend' || mode === 'unk' ? 'var(--hc-warn-fg)' : '#fff';
       const sh = SHIELD[mode === 'unk' || mode === 'pend' ? 'off' : mode];
       const dots = Math.max(4, this._code.length);
       const sz = this._wide() ? ' small' : '';
       let input;
-      if (text) input = '<input class="code" type="password" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Codice" value="' + esc(this._code) + '" data-focus="code">';
+      if (text) input = '<input class="code" type="password" id="code" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="' + esc(T('code')) + '" value="' + esc(this._code) + '" data-focus="code">';
       else input = '<div class="dotrow"><div class="dots ' + (this._shake ? 'shake' : '') + '" id="dots">' + Array.from({ length: dots }, (_, i) => '<i class="' + (i < this._code.length ? 'f' : '') + '"></i>').join('') + '</div></div>';
       const kb = (k) => '<button type="button" data-act="key" data-k="' + k + '" aria-label="' + k + '"><b>' + k + '</b></button>';
-      const keys = text ? '' : '<div class="keys">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(kb).join('') + '<span></span>' + kb(0) + '<button type="button" class="bk" data-act="back" aria-label="Cancella l’ultima cifra" ' + (this._code ? '' : 'disabled') + '>' + ic('mdi:backspace-outline') + '</button></div>';
-      const label = this._act === 'disarm' ? 'Disattiva allarme' : this._act === 'arm_home' ? 'Inserisci in casa' : 'Inserisci fuori casa';
-      return '<dialog class="ov" data-act="ovclose" aria-label="Allarme"><div class="dlg' + sz + '"><div class="mh"><h2 class="mt">Allarme</h2>' + x + '</div><div class="mb">' +
-        '<div class="abig"><div class="orb" style="background:' + orbBg + ';color:' + orbFg + '"><svg viewBox="0 0 24 24"><path fill="currentColor" d="' + sh + '"/></svg></div><div><div class="vt">' + lab + '</div><div class="vs">' + esc(this._cfg.title || 'Allarme') + '</div></div></div>' +
-        '<div class="ast"><div><span>Ora</span><b>' + lab + '</b></div><div><span>Dopo il comando</span><b>' + after + '</b></div></div>' +
-        (need ? '<div class="lbl">Codice richiesto</div>' : '<div class="warnt">Nessun codice impostato in Home Assistant: il tastierino non verifica nulla.</div>') +
+      const keys = text ? '' : '<div class="keys">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(kb).join('') + '<span></span>' + kb(0) + '<button type="button" class="bk" data-act="back" aria-label="' + esc(T('del_digit')) + '" ' + (this._code ? '' : 'disabled') + '>' + ic('mdi:backspace-outline') + '</button></div>';
+      const label = this._act === 'disarm' ? T('k_disarm') : this._act === 'arm_home' ? T('k_home') : T('k_away');
+      return '<dialog class="ov" data-act="ovclose" aria-label="' + esc(T('alarm')) + '"><div class="dlg' + sz + '"><div class="mh"><h2 class="mt">' + esc(T('alarm')) + '</h2>' + x + '</div><div class="mb">' +
+        '<div class="abig"><div class="orb" style="background:' + orbBg + ';color:' + orbFg + '"><svg viewBox="0 0 24 24"><path fill="currentColor" d="' + sh + '"/></svg></div><div><div class="vt">' + lab + '</div><div class="vs">' + esc(this._cfg.title || T('alarm')) + '</div></div></div>' +
+        '<div class="ast"><div><span>' + esc(T('now')) + '</span><b>' + lab + '</b></div><div><span>' + esc(T('after_cmd')) + '</span><b>' + after + '</b></div></div>' +
+        (need ? '<div class="lbl">' + esc(T('code_req')) + '</div>' : '<div class="warnt">' + esc(T('no_code')) + '</div>') +
         input + '<div class="err" id="err" role="alert">' + esc(this._err) + '</div>' + keys +
-        '<button type="button" class="acta' + (this._act === 'disarm' && mode === 'trig' ? ' c' : '') + '" data-act="submit" data-focus="submit" ' + ((need && !this._code) || this._busy ? 'disabled' : '') + '>' + (this._busy ? 'Invio…' : label) + '</button>' +
-        '<div class="note" style="text-align:center;margin-top:10px">Il codice si digita ogni volta e non viene mai salvato. Lo verifica Home Assistant.</div></div></div></dialog>';
+        '<button type="button" class="acta' + (this._act === 'disarm' && mode === 'trig' ? ' c' : '') + '" data-act="submit" data-focus="submit" ' + ((need && !this._code) || this._busy ? 'disabled' : '') + '>' + (this._busy ? T('sending') : esc(label)) + '</button>' +
+        '<div class="note" style="text-align:center;margin-top:10px">' + esc(T('code_note')) + '</div></div></div></dialog>';
     }
 
     _render() {
       if (!this._cfg) return;
+      this._sl();
       const root = this._root, cfg = this._cfg, hass = this._hass;
       const body0 = root.querySelector('.mb'), keep = body0 ? body0.scrollTop : 0;
       const active = this.shadowRoot.activeElement;
@@ -769,21 +1481,22 @@
       const h0 = root.getBoundingClientRect().height; if (h0) root.style.minHeight = h0 + 'px';
       const mods = this._mods();
       let h = '<div class="shell">' + (this._msg ? '<div class="msg" role="alert">' + esc(this._msg) + '</div>' : '');
-      const hasHead = (cfg.show_title && cfg.title) || (cfg.show_eyebrow && cfg.eyebrow);
+      const ttl = cfg.title == null ? T('alarm') : cfg.title;
+      const hasHead = (cfg.show_title && ttl) || (cfg.show_eyebrow && cfg.eyebrow);
       const dtlInHead = !!(hasHead && cfg.panel && mods.length);
       if (hasHead) {
-        const ht = (cfg.show_eyebrow && cfg.eyebrow ? '<div class="eye">' + esc(cfg.eyebrow) + '</div>' : '') + (cfg.show_title && cfg.title ? '<div class="title" role="heading" aria-level="2">' + esc(cfg.title) + '<b>.</b></div>' : '');
-        h += dtlInHead ? '<div class="head hb"><div class="ht">' + ht + '</div><button type="button" class="detail dtl" data-act="details" data-focus="details" aria-label="Dettagli e stato" title="Dettagli e stato">' + ic('mdi:chevron-right') + '</button></div>' : '<div class="head">' + ht + '</div>';
+        const ht = (cfg.show_eyebrow && cfg.eyebrow ? '<div class="eye">' + esc(cfg.eyebrow) + '</div>' : '') + (cfg.show_title && ttl ? '<div class="title" role="heading" aria-level="2">' + esc(ttl) + '<b>.</b></div>' : '');
+        h += dtlInHead ? '<div class="head hb"><div class="ht">' + ht + '</div><button type="button" class="detail dtl" data-act="details" data-focus="details" aria-label="' + esc(T('details')) + '" title="' + esc(T('details')) + '">' + ic('mdi:chevron-right') + '</button></div>' : '<div class="head">' + ht + '</div>';
       }
       if (cfg.panel) {
         const st = cfg.entity ? stOf(hass, cfg.entity) : null;
-        if (!cfg.entity) h += '<div class="panel"><div class="empty">Scegli l’entità dell’allarme dalla configurazione della card.</div></div>';
+        if (!cfg.entity) h += '<div class="panel"><div class="empty">' + esc(T('empty_entity')) + '</div></div>';
         else {
           const mode = alarmMode(st ? st.state : '');
           h += '<div class="panel has-dial">' + this._dial(mode, st) + (cfg.commands ? '<div class="cmds">' + this._cmds(mode, st) + '</div>' : '') + '';
           if (this._leg && cfg.legend) {
             const n = nowH();
-            h += '<div class="leg" data-act="leg"><b>Oggi inserito ' + durH(this._armedTotal()) + '</b><div class="l"><span><i style="background:var(--hc-accent)"></i>In casa</span><span><i style="background:var(--hc-away)"></i>Fuori casa</span><span><i style="background:var(--hc-warn-bd)"></i>Non inserito</span></div><p>Quadrante da 12 ore: ora mostra ' + (n >= 12 ? 'il pomeriggio (12–24)' : 'la mattina (0–12)') + '.' + (this._histOk ? '' : ' Storico non disponibile: mostro solo lo stato attuale.') + '</p></div>';
+            h += '<div class="leg" data-act="leg"><b>' + esc(T('leg_today', { d: durH(this._armedTotal()) })) + '</b><div class="l"><span><i style="background:var(--hc-accent)"></i>' + esc(T('home')) + '</span><span><i style="background:var(--hc-away)"></i>' + esc(T('away')) + '</span><span><i style="background:var(--hc-warn-bd)"></i>' + esc(T('leg_not')) + '</span></div><p>' + esc(T('leg_p', { w: T(n >= 12 ? 'w_pm' : 'w_am') })) + (this._histOk ? '' : esc(T('leg_nohist'))) + '</p></div>';
           }
           h += '</div>';
         }
@@ -791,14 +1504,14 @@
         if (tiles.length) {
           h += '<div class="lst">' + tiles.map((k) => {
             const s = summaryOf(k, this._items(k));
-            return '<button type="button" class="tile ' + (s.lv === 'ok' ? '' : s.lv) + '" data-act="' + (k === 'siren' ? 'siren-tile' : 'tile') + '" data-m="' + k + '" data-focus="tile-' + k + '"><div class="ico">' + ic(MODS[k].icon) + '</div><div class="t"><div class="rn">' + esc(MODS[k].short) + '</div></div><div class="rs st">' + esc(s.t) + '</div>' + ic('mdi:chevron-right', ' class="chev"') + '</button>';
+            return '<button type="button" class="tile ' + (s.lv === 'ok' ? '' : s.lv) + '" data-act="' + (k === 'siren' ? 'siren-tile' : 'tile') + '" data-m="' + k + '" data-focus="tile-' + k + '"><div class="ico">' + ic(MODS[k].icon) + '</div><div class="t"><div class="rn">' + esc(T('m_' + k)) + '</div></div><div class="rs st">' + esc(s.t) + '</div>' + ic('mdi:chevron-right', ' class="chev"') + '</button>';
           }).join('') + new Array((3 - (tiles.length % 3)) % 3 + 1).join('<span class="tile ph" aria-hidden="true"></span>') + '</div>';
         }
-        if (mods.length && !dtlInHead) h += '<button type="button" class="detail" data-act="details" data-focus="details">Dettagli e stato ' + ic('mdi:chevron-right') + '</button>';
+        if (mods.length && !dtlInHead) h += '<button type="button" class="detail" data-act="details" data-focus="details">' + esc(T('details')) + ' ' + ic('mdi:chevron-right') + '</button>';
       } else {
-        if (!mods.length) h += '<div class="empty">Nessun modulo con entità: scegli le entità dalla configurazione della card.</div>';
+        if (!mods.length) h += '<div class="empty">' + esc(T('empty_mods')) + '</div>';
         mods.forEach((k) => {
-          h += (mods.length > 1 ? '<div class="lab">' + esc(MODS[k].title) + '</div>' : '') + this._section(k);
+          h += (mods.length > 1 ? '<div class="lab">' + esc(T('m_' + k)) + '</div>' : '') + this._section(k);
         });
       }
       h += '</div>';
@@ -883,6 +1596,7 @@
     _click(e) {
       const t = e.target.closest ? e.target.closest('[data-act],[data-filter]') : null;
       if (!t) return;
+      this._sl();
       if (t.dataset.filter) { this._filter = t.dataset.filter; this._focus = t.dataset.focus || ''; this._render(); return; }
       const a = t.dataset.act, hass = this._hass;
       if (a === 'ovclose') { if (e.target === t) this._closePopup(); return; }
@@ -904,7 +1618,7 @@
         const v = Math.max(mn, Math.min(mx, Math.round((base + Number(t.dataset.d)) * 1000) / 1000));
         this._volPend[id] = v; this._sig = null; this._focus = t.dataset.focus || '';
         window.setTimeout(() => { if (this._volPend[id] === v) { delete this._volPend[id]; this._sig = null; if (this._popup || this._cfg) this._render(); } }, 4000);
-        this._call('number', 'set_value', { entity_id: id, value: v }, 'Volume non modificato.');
+        this._call('number', 'set_value', { entity_id: id, value: v }, T('vol_fail'));
         this._render(); return;
       }
       if (a === 'siren-tile' || a === 'siren') {
@@ -914,12 +1628,13 @@
         this._openSiren(id);
         return;
       }
-      if (a === 'siren-yes') { const id = this._sirenId, off = this._sirenOff; this._closePopup(true); this._call(id.split('.')[0], off ? 'turn_off' : 'turn_on', { entity_id: id }, off ? 'Sirena non spenta.' : 'Sirena non attivata.'); return; }
+      if (a === 'siren-yes') { const id = this._sirenId, off = this._sirenOff; this._closePopup(true); this._call(id.split('.')[0], off ? 'turn_off' : 'turn_on', { entity_id: id }, off ? T('sir_off_fail') : T('sir_on_fail')); return; }
       if (a === 'cam') { const id = t.dataset.id; if (this._popup) this._closePopup(true); this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: id }, bubbles: true, composed: true })); }
     }
     _change(e) {
       const el = e.target;
-      if (el && el.dataset && el.dataset.sel) this._call('select', 'select_option', { entity_id: el.dataset.sel, option: el.value }, 'Impostazione non modificata.');
+      this._sl();
+      if (el && el.dataset && el.dataset.sel) this._call('select', 'select_option', { entity_id: el.dataset.sel, option: el.value }, T('set_fail'));
       if (el && el.id === 'code') { this._code = el.value; this._err = ''; }
     }
     _key(e) {
@@ -1016,21 +1731,21 @@ button,input,select{font:inherit;color:inherit}
     _check(id, label, help, on) { return '<div class="row"><label for="' + id + '">' + esc(label) + (help ? '<div class="muted">' + esc(help) + '</div>' : '') + '</label><input type="checkbox" id="' + id + '" ' + (on ? 'checked' : '') + '></div>'; }
 
     _allarme(n) {
-      return '<div class="heading">Allarme</div><div class="desc">Scegli la centrale e come si presenta il pannello. Il codice non viene mai salvato nella card: lo digiti ogni volta e lo verifica Home Assistant.</div>' +
-        this._field('Entità allarme', '<div data-slot="entity"></div>', 'Qualsiasi entità del dominio alarm_control_panel.') +
-        this._check('panel', 'Pannello allarme', 'Quadrante con le ore di oggi, comandi e riquadri. Spento: la card mostra solo i moduli scelti.', n.panel) +
-        this._check('commands', 'Comandi attivi', 'Pulsanti In casa, Fuori casa e Disattiva. Spenti: il pannello resta in sola lettura.', n.commands) +
-        this._check('legend', 'Legenda al tocco', 'Toccando il quadrante compaiono i colori e il totale di oggi.', n.legend) +
-        this._check('hands', 'Lancette', 'Spente di default: il punto sul bordo segna già l’ora attuale.', n.hands);
+      return '<div class="heading">' + esc(T('tAl')) + '</div><div class="desc">' + esc(T('al_desc')) + '</div>' +
+        this._field(T('e_entity'), '<div data-slot="entity"></div>', T('e_entity_h')) +
+        this._check('panel', T('e_panel'), T('e_panel_h'), n.panel) +
+        this._check('commands', T('e_cmds'), T('e_cmds_h'), n.commands) +
+        this._check('legend', T('e_leg'), T('e_leg_h'), n.legend) +
+        this._check('hands', T('e_hands'), T('e_hands_h'), n.hands);
     }
     _moduli(n) {
-      let h = '<div class="heading">Moduli</div><div class="desc">Scegli le entità di ogni modulo dai selettori. Un modulo senza entità non compare. Ogni modulo funziona anche da solo: per averne uno solo su una card, spegni il pannello allarme e lascia attivo solo quel modulo.</div>';
+      let h = '<div class="heading">' + esc(T('mod_head')) + '</div><div class="desc">' + esc(T('mod_desc')) + '</div>';
       n.order.forEach((k, i) => {
         const m = n.modules[k];
-        h += '<div class="mod"><div class="mh"><div class="nm">' + esc(MODS[k].title) + '</div><div class="ctl"><button type="button" class="action" data-move="' + i + ':-1" aria-label="Sposta su ' + esc(MODS[k].title) + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button type="button" class="action" data-move="' + i + ':1" aria-label="Sposta giù ' + esc(MODS[k].title) + '" ' + (i === n.order.length - 1 ? 'disabled' : '') + '>↓</button></div></div>' +
-          '<div class="muted" style="margin-top:6px">' + esc(MODS[k].help) + '</div>' +
-          '<div class="mb"><div class="chk"><input type="checkbox" id="on-' + k + '" data-on="' + k + '" ' + (m.on ? 'checked' : '') + '><label for="on-' + k + '">Modulo attivo</label></div>' +
-          (n.panel ? '<div class="chk"><input type="checkbox" id="tile-' + k + '" data-tile="' + k + '" ' + (m.tile ? 'checked' : '') + '><label for="tile-' + k + '">Riga nell’elenco della card</label></div>' : '') +
+        h += '<div class="mod"><div class="mh"><div class="nm">' + esc(T('m_' + k)) + '</div><div class="ctl"><button type="button" class="action" data-move="' + i + ':-1" aria-label="' + esc(T('mv_up', { n: T('m_' + k) })) + '" ' + (i === 0 ? 'disabled' : '') + '>↑</button><button type="button" class="action" data-move="' + i + ':1" aria-label="' + esc(T('mv_dn', { n: T('m_' + k) })) + '" ' + (i === n.order.length - 1 ? 'disabled' : '') + '>↓</button></div></div>' +
+          '<div class="muted" style="margin-top:6px">' + esc(T('h_' + k)) + '</div>' +
+          '<div class="mb"><div class="chk"><input type="checkbox" id="on-' + k + '" data-on="' + k + '" ' + (m.on ? 'checked' : '') + '><label for="on-' + k + '">' + esc(T('mod_on')) + '</label></div>' +
+          (n.panel ? '<div class="chk"><input type="checkbox" id="tile-' + k + '" data-tile="' + k + '" ' + (m.tile ? 'checked' : '') + '><label for="tile-' + k + '">' + esc(T('mod_tile')) + '</label></div>' : '') +
           '<div data-slot="mod-' + k + '"></div>' + this._roomPick(k, m) + '</div></div>';
       });
       return h;
@@ -1048,21 +1763,22 @@ button,input,select{font:inherit;color:inherit}
         const a = areaOf(h, id);
         if (a) (out[a.id] = out[a.id] || { id: a.id, name: a.name, ids: [] }).ids.push(id);
       });
-      return Object.keys(out).map((x) => out[x]).sort((x, y) => x.name.localeCompare(y.name, 'it'));
+      return Object.keys(out).map((x) => out[x]).sort((x, y) => x.name.localeCompare(y.name, CUR));
     }
     _roomPick(k, m) {
       const rs = this._roomsFor(k, m);
       if (!rs.length) return '';
-      return '<div class="field"><div class="label">Aggiungi da stanza</div><select class="input" data-room="' + k + '"><option value="">Scegli una stanza…</option>' + rs.map((r) => '<option value="' + esc(r.id) + '">' + esc(r.name) + ' (' + r.ids.length + ')</option>').join('') + '</select><div class="tiny">Aggiunge i dispositivi compatibili di quella stanza. Puoi sempre toglierne qualcuno dal selettore.</div></div>';
+      return '<div class="field"><div class="label">' + esc(T('room_add')) + '</div><select class="input" data-room="' + k + '"><option value="">' + esc(T('room_pick')) + '</option>' + rs.map((r) => '<option value="' + esc(r.id) + '">' + esc(r.name) + ' (' + r.ids.length + ')</option>').join('') + '</select><div class="tiny">' + esc(T('room_h')) + '</div></div>';
     }
     _aspetto(n) {
-      return '<div class="heading">Aspetto</div>' +
-        this._field('Intestazione superiore', '<input class="input" type="text" id="eyebrow" maxlength="60" value="' + esc(n.eyebrow) + '">') +
-        this._field('Titolo', '<input class="input" type="text" id="title" maxlength="60" value="' + esc(n.title) + '">', 'Il punto verde finale lo aggiunge la card.') +
-        this._check('show-eyebrow', 'Mostra intestazione superiore', '', n.show_eyebrow) +
-        this._check('show-title', 'Mostra titolo', '', n.show_title) +
-        this._check('cw', 'Tutta la larghezza disponibile su tablet e desktop', 'Se è disattivato la card resta stretta (460 px) al centro.', n.width === 'full') +
-        this._field('Tema', '<select class="input" id="theme">' + [['auto', 'Automatico (Home Assistant)'], ['light', 'Light Edera'], ['dark', 'Dark Edera']].map((o) => '<option value="' + o[0] + '" ' + (n.theme_mode === o[0] ? 'selected' : '') + '>' + o[1] + '</option>').join('') + '</select>');
+      return '<div class="heading">' + esc(T('tAs')) + '</div>' +
+        this._field(T('eyebrow'), '<input class="input" type="text" id="eyebrow" maxlength="60" value="' + esc(n.eyebrow) + '">') +
+        this._field(T('title'), '<input class="input" type="text" id="title" maxlength="60" value="' + esc(n.title == null ? T('alarm') : n.title) + '">', T('title_h')) +
+        this._check('show-eyebrow', T('show_eyebrow'), '', n.show_eyebrow) +
+        this._check('show-title', T('show_title'), '', n.show_title) +
+        this._check('cw', T('full'), T('full_h'), n.width === 'full') +
+        this._field(T('theme'), '<select class="input" id="theme">' + [['auto', T('th_auto')], ['light', 'Light Edera'], ['dark', 'Dark Edera']].map((o) => '<option value="' + o[0] + '" ' + (n.theme_mode === o[0] ? 'selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>') +
+        this._field(T('lang'), '<select class="input" id="language">' + [['auto', T('lang_auto')]].concat(LANGS).map((o) => '<option value="' + o[0] + '" ' + (n.language === o[0] ? 'selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>', T('lang_h'));
     }
     _mount(slot, selector, value, cb) {
       const el = document.createElement('ha-selector');
@@ -1072,9 +1788,10 @@ button,input,select{font:inherit;color:inherit}
     }
     _render() {
       const n = this._norm(), t = this._tab;
+      CUR = pickLang(n.language, this._hass);
       const act = this.shadowRoot.activeElement ? this.shadowRoot.activeElement.id : '';
-      this.shadowRoot.innerHTML = '<style>' + EDITOR_CSS + '</style><div class="ed"><div class="tabs" role="group" aria-label="Sezioni">' +
-        [['allarme', 'Allarme'], ['moduli', 'Moduli'], ['aspetto', 'Aspetto']].map((a) => '<button type="button" class="tab" data-tab="' + a[0] + '" id="t-' + a[0] + '" aria-pressed="' + (t === a[0]) + '">' + a[1] + '</button>').join('') + '</div>' +
+      this.shadowRoot.innerHTML = '<style>' + EDITOR_CSS + '</style><div class="ed"><div class="tabs" role="group" aria-label="' + esc(T('secs')) + '">' +
+        [['allarme', T('tAl')], ['moduli', T('tMo')], ['aspetto', T('tAs')]].map((a) => '<button type="button" class="tab" data-tab="' + a[0] + '" id="t-' + a[0] + '" aria-pressed="' + (t === a[0]) + '">' + a[1] + '</button>').join('') + '</div>' +
         (t === 'allarme' ? this._allarme(n) : t === 'moduli' ? this._moduli(n) : this._aspetto(n)) + '</div>';
       this._built = true;
       const sl = (name) => this.shadowRoot.querySelector('[data-slot="' + name + '"]');
@@ -1103,6 +1820,7 @@ button,input,select{font:inherit;color:inherit}
       if (map[el.id]) { c[map[el.id]] = el.checked; this._emit(c); if (el.id === 'panel') this._render(); return; }
       if (el.id === 'cw') { c.width = el.checked ? 'full' : 'center'; this._emit(c); return; }
       if (el.id === 'theme') { c.theme_mode = el.value; this._emit(c); return; }
+      if (el.id === 'language') { if (el.value === 'auto') delete c.language; else c.language = el.value; this._emit(c); this._render(); return; }
       if (el.dataset && el.dataset.room && el.value) {
         const k = el.dataset.room, n = this._norm(), r = this._roomsFor(k, n.modules[k]).filter((x) => x.id === el.value)[0];
         if (r) { this._setMod(k, { entities: n.modules[k].entities.concat(r.ids) }); this._render(); }
