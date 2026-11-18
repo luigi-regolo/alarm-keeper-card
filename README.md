@@ -13,6 +13,8 @@ A 12-hour clock shows how long the alarm has been armed today: green while armed
 
 The card is modular. Doors, windows, motion sensors, tamper sensors, batteries, the base station, the siren, cameras, volumes and settings are separate modules: use them all together, or add a single one to a dashboard on its own. A module without entities does not appear.
 
+The interface is available in Italian, English, German and French. It follows the language of your Home Assistant profile, falls back to English for any other language, and the language can also be chosen in the editor.
+
 The card reads entities by domain and device class, so it is not tied to a specific device manufacturer, and it does not require a dedicated account, paid API, or subscription.
 
 ## Preview
@@ -27,16 +29,21 @@ The card reads entities by domain and device class, so it is not tied to a speci
   <img src="assets/alarm-keeper-popup-dark.png" alt="Alarm Keeper Card — details popup, Edera Dark" width="300" />
 </p>
 
-*Alarm Keeper Card in Edera Light and Dark modes, with its details popup. The previews use demonstration values and do not display private installation data.*
+<p align="center">
+  <img src="assets/alarm-keeper-languages.png" alt="Alarm Keeper Card — Italian, English, German and French" width="620" />
+</p>
+
+*Alarm Keeper Card in Edera Light and Dark modes, with its details popup, and in its four languages (Italian, English, German and French). The previews use demonstration values and do not display private installation data.*
 
 ## Features
 
 - **Activity clock:** A 12-hour dial that covers the hours of the day so far: green for armed at home, blue for armed away and yellow for not armed, with a marker on the current time. Tap the dial to see the colour legend and the total time armed today.
 - **Arm and disarm:** **Home**, **Away** and **Disarm** buttons. Commands can be turned off in the editor, leaving a read-only panel.
 - **Code keypad:** Disarming always asks for the code on a numeric keypad with rounded square keys. The code is typed every time, sent to Home Assistant and never stored in the card or in its settings.
+- **Languages:** Italian, English, German and French. The language follows your Home Assistant profile (English when yours is not available) or can be set in the editor.
 - **Modular:** Ten modules, each usable on its own or together in the full card.
-- **Summary grid:** One tile for each module with a short status, three per row, composed by default and adjustable in the editor. Tap a tile to open its group in the details popup.
-- **Details popup:** Opened from the round button next to the title (or from a button below the grid when the header is hidden). Fixed-height popup, centred on the screen, with filters for the items that need attention (**Attenzione**, shown first) and for all items. Devices are grouped by room, using the rooms assigned in Home Assistant; devices without a room follow, grouped by type. On tablets and desktop it uses a wide layout with columns.
+- **Summary grid:** One tile for each module, with its status in a coloured pill, three per row, composed by default and adjustable in the editor. Tap a tile to open its group in the details popup.
+- **Details popup:** Opened from the round button next to the title (or from a button below the grid when the header is hidden). Fixed-height popup, centred on the screen, with filters for the items that need attention (**Attention**, shown first) and for all items. Devices are grouped by room, using the rooms assigned in Home Assistant; devices without a room follow, grouped by type. On tablets and desktop it uses a wide layout with columns.
 - **Doors and windows:** Open or closed, with the time since the last change.
 - **Motion sensors:** Current state and the time of the last movement.
 - **Tamper sensors and batteries:** Tamper alerts and battery levels, with a warning for low batteries.
@@ -82,9 +89,9 @@ If the `www` directory was newly created, Home Assistant may require a restart b
 
 Open a dashboard in edit mode, add **Alarm Keeper Card**, and configure the available sections:
 
-- **Allarme:** The alarm entity, the alarm panel, the commands, the legend and the optional clock hands.
-- **Moduli:** For each module, whether it is active, whether it has a tile in the grid, its entities and its position. For doors, windows, motion sensors, batteries, tamper sensors and cameras, **Aggiungi da stanza** adds the compatible devices of a room in one step; it lists only rooms that have compatible devices not yet added.
-- **Aspetto:** Header, title, theme and a switch for the full available width on tablets and desktop (off by default: narrow and centred).
+- **Alarm:** The alarm entity, the alarm panel, the commands, the legend and the optional clock hands.
+- **Modules:** For each module, whether it is active, whether it has a tile in the grid, its entities and its position. For doors, windows, motion sensors, batteries, tamper sensors and cameras, **Add from room** adds the compatible devices of a room in one step; it lists only rooms that have compatible devices not yet added.
+- **Appearance:** Header, title, theme, language and a switch for the full available width on tablets and desktop (off by default: narrow and centred).
 
 The editor uses native Home Assistant entity selectors, filtered by domain and device class for each module.
 
@@ -94,7 +101,7 @@ The popup groups devices by room, using the area assigned to each entity or to i
 
 ### Using a single module
 
-Every module works on its own. To add only one to a dashboard, turn off the alarm panel in the **Allarme** section and leave a single module active in **Moduli**. Use a separate card for each module you want in a different place. For example, a card with only the doors, one with only the siren, or one with only the volumes.
+Every module works on its own. To add only one to a dashboard, turn off the alarm panel in the **Alarm** section and leave a single module active in **Modules**. Use a separate card for each module you want in a different place. For example, a card with only the doors, one with only the siren, or one with only the volumes.
 
 ### The code keypad
 
@@ -120,7 +127,7 @@ The card uses the standard Home Assistant services: `alarm_control_panel.alarm_d
 
 Rooms are read from the Home Assistant area and device registries. If no device has a room, the popup groups everything by type.
 
-The card interface is currently in Italian.
+The card interface is available in Italian, English, German and French. Names of entities, rooms and devices come from Home Assistant and are not translated.
 
 No specific minimum Home Assistant version has been independently verified for this repository.
 
